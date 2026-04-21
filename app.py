@@ -37,7 +37,13 @@ with col1:
     st.info("Haritada bir yere tıklayarak koordinatları sağdaki forma otomatik alabilirsiniz.")
     
     # Haritayı oluştur (Başlangıç koordinatı)
-    m = folium.Map(location=[38.6748, 39.2225], zoom_start=13)
+    # Haritayı oluştur (Google Haritalar Altyapısı ile)
+    m = folium.Map(
+        location=[38.6748, 39.2225], 
+        zoom_start=13,
+        tiles='https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+        attr='Google Maps'
+    )
 
     # Kurumları haritaya ekle (Mavi ikon)
     for inst in institutions:
