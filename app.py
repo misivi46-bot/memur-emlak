@@ -2,13 +2,13 @@ import streamlit as st
 import folium
 from streamlit_folium import st_folium
 import math
-import base64  # YENİ: Fotoğrafları haritada göstermek için gereken kütüphane
+import base64
 
 # Sayfa ayarları
 st.set_page_config(page_title="Memur Emlak & Tayin Haritası", layout="wide")
 st.title("🗺️ Memur Tayin & Emlak Uygulaması")
 
-# --- 1. MESAFE HESAPLAMA FONKSİYONU (Aynı) ---
+# --- 1. MESAFE HESAPLAMA FONKSİYONU ---
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371
     dlat = math.radians(lat2 - lat1)
@@ -18,7 +18,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
     return round(R * c, 2)
 
-# --- 2. VERİ ALTYAPISI (Aynı) ---
+# --- 2. VERİ ALTYAPISI ---
 institutions = [
     {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
     {"name": "Eğitim ve Araştırma Hastanesi", "lat": 38.6738, "lon": 39.1963},
@@ -58,10 +58,10 @@ with col1:
             distances_html += f"<li>{inst['name']}: {dist} km</li>"
         distances_html += "</ul>"
 
-        # YENİ: Eğer resim yüklendiyse harita kutucuğuna ekle
+        # ÇÖZÜM UYGULANAN KISIM 1: .get() metodu ile güvenli sorgulama
         image_html = ""
-        if house['image_b64']:
-            image_html = f'<img src="data:image/jpeg;base64,{house["image_b64"]}" style="width:100%; border-radius:8px; margin-bottom:10px;">'
+        if house.get('image_b64'): 
+            image_html = f'<img src="data:image/jpeg;base64,{house.get("image_b64")}" style="width:100%; border-radius:8px; margin-bottom:10px;">'
 
         popup_content = f"""
         <div style="width:220px">
@@ -101,14 +101,12 @@ with col2:
         
         comment = st.text_area("Ev hakkında yorumlar ve detaylar")
         
-        # YENİ: Dosya yükleme butonu
         uploaded_file = st.file_uploader("Ev Fotoğrafı Yükle", type=["png", "jpg", "jpeg"])
         
         submitted = st.form_submit_button("İlanı Haritaya Ekle")
         
         if submitted:
             if title and price > 0:
-                # YENİ: Yüklenen resmi haritada gösterebilmek için dönüştürme işlemi
                 image_b64 = ""
                 if uploaded_file is not None:
                     image_b64 = base64.b64encode(uploaded_file.read()).decode()
@@ -119,7 +117,7 @@ with col2:
                     "lat": lat,
                     "lon": lon,
                     "comment": comment,
-                    "image_b64": image_b64 # Dönüştürülmüş resmi kaydediyoruz
+                    "image_b64": image_b64
                 }
                 st.session_state.houses.append(new_house)
                 st.success("Ev başarıyla eklendi!")
@@ -134,6 +132,6 @@ if len(st.session_state.houses) > 0:
     for house in st.session_state.houses:
         with st.expander(f"{house['title']} - {house['price']} TL"):
             st.write(f"**Açıklama:** {house['comment']}")
-            # YENİ: Listede resmi gösterme
-            if house['image_b64']:
-                st.markdown(f'<img src="data:image/jpeg;base64,{house["image_b64"]}" width="300" style="border-radius:10px;">', unsafe_allow_html=True)
+            # ÇÖZÜM UYGULANAN KISIM 2: .get() metodu ile güvenli sorgulama
+            if house.get('image_b64'):
+                st.markdown(f'<img src="data:image/jpeg;base64,{house.get("image_b64")}" width="300" style="border-radius:10px;">', unsafe_allow_html=True)
