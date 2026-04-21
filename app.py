@@ -38,11 +38,12 @@ with col1:
     
     # Haritayı oluştur (Başlangıç koordinatı)
     # Haritayı oluştur (Google Haritalar Altyapısı ile)
+    # Haritayı oluştur (Google Hibrit Altyapısı ile)
     m = folium.Map(
         location=[38.6748, 39.2225], 
         zoom_start=13,
-        tiles='https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        attr='Google Maps'
+        tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+        attr='Google Hybrid'
     )
 
     # Kurumları haritaya ekle (Mavi ikon)
