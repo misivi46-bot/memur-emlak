@@ -28,7 +28,7 @@ institutions = [
 if 'houses' not in st.session_state:
     st.session_state.houses = []
     
-# KULLANICI VERİTABANI (Gizli Yönetici Hesabı Burada Tanımlandı)
+# KULLANICI VERİTABANI (Gizli Yönetici Hesabı)
 if 'users' not in st.session_state:
     st.session_state.users = {
         "misivi46": {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan"}
@@ -57,9 +57,8 @@ with st.sidebar:
     # EĞER GİRİŞ YAPILMAMIŞSA
     if not st.session_state.logged_in:
         
-        # GOOGLE İLE GİRİŞ BUTONU (Prototip)
         if st.button("🌐 Google Hesabı ile Devam Et", use_container_width=True):
-            st.info("💡 Bilgi: Gerçek Google entegrasyonu için uygulama canlıya alındığında Google Cloud API (OAuth) bağlantısı yapılacaktır. Şimdilik aşağıdaki formu kullanabilirsiniz.")
+            st.info("💡 Bilgi: Gerçek Google entegrasyonu için uygulama canlıya alındığında Google Cloud API (OAuth) bağlantısı yapılacaktır.")
             
         st.markdown("<div style='text-align: center; color: gray; margin: 10px 0;'>— Veya —</div>", unsafe_allow_html=True)
         
@@ -104,6 +103,38 @@ with st.sidebar:
         st.success(f"Hoş geldin, {st.session_state.users[st.session_state.current_user]['ad']}")
         st.write(f"🛡️ **Yetki:** {st.session_state.user_role.upper()}")
         
+        # --- PROFİL VE ŞİFRE AYARLARI ---
+        with st.expander("⚙️ Profil Ayarları (Şifre İşlemleri)"):
+            # Yönetici Yetkisi: İstediği kullanıcının şifresini doğrudan değiştirebilir
+            if st.session_state.user_role == "yonetici":
+                st.markdown("**Kullanıcı Şifresi Sıfırlama (Admin)**")
+                hedef_kullanici = st.selectbox("İşlem Yapılacak Kullanıcı:", list(st.session_state.users.keys()))
+                yeni_sifre_admin = st.text_input("Yeni Şifre Belirle", type="password", key="admin_pw")
+                
+                if st.button("Şifreyi Güncelle", key="btn_admin_pw"):
+                    if len(yeni_sifre_admin) > 0:
+                        st.session_state.users[hedef_kullanici]["sifre"] = yeni_sifre_admin
+                        st.success(f"✅ {hedef_kullanici} kullanıcısının şifresi başarıyla değiştirildi!")
+                    else:
+                        st.error("Lütfen geçerli bir şifre girin.")
+            
+            # Standart Kullanıcı Yetkisi: Sadece kendi şifresini değiştirebilir (Eski şifre doğrulaması ile)
+            else:
+                st.markdown("**Kendi Şifreni Değiştir**")
+                eski_sifre = st.text_input("Mevcut Şifreniz", type="password")
+                yeni_sifre = st.text_input("Yeni Şifre", type="password")
+                
+                if st.button("Şifremi Güncelle"):
+                    if eski_sifre == st.session_state.users[st.session_state.current_user]["sifre"]:
+                        if len(yeni_sifre) > 0:
+                            st.session_state.users[st.session_state.current_user]["sifre"] = yeni_sifre
+                            st.success("✅ Şifreniz başarıyla güncellendi!")
+                        else:
+                            st.error("Yeni şifre alanı boş bırakılamaz.")
+                    else:
+                        st.error("❌ Mevcut şifrenizi hatalı girdiniz.")
+        
+        st.markdown("---")
         my_houses = [h for h in st.session_state.houses if h.get("owner") == st.session_state.current_user]
         st.write(f"Eklediğiniz İlan Sayısı: **{len(my_houses)}**")
         
