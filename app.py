@@ -28,7 +28,7 @@ institutions = [
 if 'houses' not in st.session_state:
     st.session_state.houses = []
     
-# KULLANICI VERİTABANI (Gizli Yönetici Hesabı)
+# KULLANICI VERİTABANI (Sadece Senin Gizli Yönetici Hesabın)
 if 'users' not in st.session_state:
     st.session_state.users = {
         "misivi46": {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan"}
@@ -105,7 +105,6 @@ with st.sidebar:
         
         # --- PROFİL VE ŞİFRE AYARLARI ---
         with st.expander("⚙️ Profil Ayarları (Şifre İşlemleri)"):
-            # Yönetici Yetkisi: İstediği kullanıcının şifresini doğrudan değiştirebilir
             if st.session_state.user_role == "yonetici":
                 st.markdown("**Kullanıcı Şifresi Sıfırlama (Admin)**")
                 hedef_kullanici = st.selectbox("İşlem Yapılacak Kullanıcı:", list(st.session_state.users.keys()))
@@ -118,7 +117,6 @@ with st.sidebar:
                     else:
                         st.error("Lütfen geçerli bir şifre girin.")
             
-            # Standart Kullanıcı Yetkisi: Sadece kendi şifresini değiştirebilir (Eski şifre doğrulaması ile)
             else:
                 st.markdown("**Kendi Şifreni Değiştir**")
                 eski_sifre = st.text_input("Mevcut Şifreniz", type="password")
