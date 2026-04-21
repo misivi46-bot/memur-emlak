@@ -28,10 +28,10 @@ institutions = [
 if 'houses' not in st.session_state:
     st.session_state.houses = []
     
-# Kullanıcı Veritabanı (Admin hesabı varsayılan olarak var)
+# KULLANICI VERİTABANI (Gizli Yönetici Hesabı Burada Tanımlandı)
 if 'users' not in st.session_state:
     st.session_state.users = {
-        "admin": {"sifre": "admin123", "rol": "yonetici", "ad": "Sistem Yöneticisi"}
+        "misivi46": {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan"}
     }
 
 # Oturum Durumu
@@ -56,8 +56,14 @@ with st.sidebar:
     
     # EĞER GİRİŞ YAPILMAMIŞSA
     if not st.session_state.logged_in:
-        # Sekmeli yapı yerine radyo butonu ile Giriş/Kayıt geçişi
-        secim = st.radio("Ne yapmak istersiniz?", ["Giriş Yap", "Üye Ol"])
+        
+        # GOOGLE İLE GİRİŞ BUTONU (Prototip)
+        if st.button("🌐 Google Hesabı ile Devam Et", use_container_width=True):
+            st.info("💡 Bilgi: Gerçek Google entegrasyonu için uygulama canlıya alındığında Google Cloud API (OAuth) bağlantısı yapılacaktır. Şimdilik aşağıdaki formu kullanabilirsiniz.")
+            
+        st.markdown("<div style='text-align: center; color: gray; margin: 10px 0;'>— Veya —</div>", unsafe_allow_html=True)
+        
+        secim = st.radio("Ne yapmak istersiniz?", ["Giriş Yap", "Üye Ol"], label_visibility="collapsed")
         
         if secim == "Giriş Yap":
             st.markdown("### Sisteme Giriş")
@@ -90,12 +96,8 @@ with st.sidebar:
                     elif yeni_kullanici in st.session_state.users:
                         st.error("Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir tane seçin.")
                     else:
-                        # Yeni kullanıcıyı sisteme ekle (Varsayılan rol: kullanici)
                         st.session_state.users[yeni_kullanici] = {"sifre": yeni_sifre, "rol": "kullanici", "ad": yeni_ad}
                         st.success("Hesabınız başarıyla oluşturuldu! Yukarıdan 'Giriş Yap' sekmesine geçerek girebilirsiniz.")
-
-        st.markdown("---")
-        st.caption("Not: Test Yönetici Hesabı -> Kullanıcı Adı: `admin` | Şifre: `admin123`")
 
     # EĞER GİRİŞ YAPILMIŞSA
     else:
@@ -117,17 +119,15 @@ st.title("🗺️ Memur Tayin & Emlak Uygulaması")
 
 tab_harita, tab_ekle, tab_yonetim = st.tabs(["📍 Harita (Herkese Açık)", "🏠 Yeni İlan Ekle (Sadece Üyeler)", "⚙️ İlan Yönetimi (Sadece Üyeler)"])
 
-# -- SEKME 1: HARİTA (HER ZAMAN GÖRÜNÜR) --
+# -- SEKME 1: HARİTA --
 with tab_harita:
     if not st.session_state.logged_in:
         st.info("👋 Haritadaki kurumları görebilirsiniz. İlanları görmek ve ev eklemek için lütfen sol menüden giriş yapın veya üye olun.")
     else:
         st.success("Haritadaki kurumlara tıklayarak detayları, yeşil ev ikonlarına tıklayarak ilan detaylarını görebilirsiniz.")
 
-    # Haritayı oluştur
     m = folium.Map(location=[38.6748, 39.2225], zoom_start=13, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google Hybrid')
 
-    # Kurumları haritaya ekle (HER ZAMAN ÇALIŞIR)
     for inst in institutions:
         folium.Marker(
             [inst["lat"], inst["lon"]],
@@ -136,7 +136,6 @@ with tab_harita:
             icon=folium.Icon(color="blue", icon="info-sign")
         ).add_to(m)
 
-    # Evleri haritaya ekle (SADECE GİRİŞ YAPILDIYSA ÇALIŞIR)
     if st.session_state.logged_in:
         for house in st.session_state.houses:
             distances_html = "<ul>"
@@ -149,7 +148,6 @@ with tab_harita:
             if house.get('image_b64'):
                 image_html = f'<img src="data:image/jpeg;base64,{house.get("image_b64")}" style="width:100%; border-radius:8px; margin-bottom:10px;">'
 
-            # Güvenli sahip çağırma (Eski eklenmiş sahipsiz evler hata vermesin diye)
             owner_username = house.get('owner', 'Bilinmiyor')
             owner_name = st.session_state.users.get(owner_username, {}).get('ad', 'Bilinmiyor')
 
@@ -172,11 +170,10 @@ with tab_harita:
                 icon=folium.Icon(color="green", icon="home")
             ).add_to(m)
 
-    # Haritayı ekrana bas (Tıklama verisini alabilmek için)
     map_data = st_folium(m, width="100%", height=500)
 
 
-# -- SEKME 2: İLAN EKLEME (SADECE GİRİŞ YAPANLARA AÇIK) --
+# -- SEKME 2: İLAN EKLEME --
 with tab_ekle:
     if not st.session_state.logged_in:
         st.warning("🔒 Yeni bir emlak ilanı ekleyebilmek için sol menüden sisteme üye olmalı veya giriş yapmalısınız.")
@@ -224,7 +221,7 @@ with tab_ekle:
                 else:
                     st.error("Lütfen başlık ve fiyat bilgilerini eksiksiz girin.")
 
-# -- SEKME 3: YÖNETİM PANELİ (SADECE GİRİŞ YAPANLARA AÇIK) --
+# -- SEKME 3: YÖNETİM PANELİ --
 with tab_yonetim:
     if not st.session_state.logged_in:
         st.warning("🔒 İlanları yönetmek veya silmek için sol menüden sisteme giriş yapmalısınız.")
@@ -235,7 +232,6 @@ with tab_yonetim:
             st.info("Sistemde henüz kayıtlı ilan bulunmuyor.")
         else:
             for idx, house in enumerate(st.session_state.houses):
-                # Admin her şeyi görür, normal kullanıcı sadece kendi ilanını görür
                 if st.session_state.user_role == "yonetici" or house.get("owner") == st.session_state.current_user:
                     owner_username = house.get('owner', 'Bilinmiyor')
                     owner_name = st.session_state.users.get(owner_username, {}).get('ad', 'Bilinmiyor')
@@ -243,7 +239,6 @@ with tab_yonetim:
                     with st.expander(f"📌 {house['title']} - {house['price']} TL (Ekleyen: {owner_name})"):
                         st.write(f"**Açıklama:** {house['comment']}")
                         
-                        # Resmi varsa yönetim panelinde de göster
                         if house.get('image_b64'):
                             st.markdown(f'<img src="data:image/jpeg;base64,{house.get("image_b64")}" width="150" style="border-radius:10px;">', unsafe_allow_html=True)
                         
