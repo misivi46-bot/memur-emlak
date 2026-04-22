@@ -1,6 +1,6 @@
 import streamlit as st
 import folium
-from folium.plugins import MarkerCluster # YENİ: Harita kümeleme kütüphanesi
+from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import math
 import base64
@@ -77,10 +77,17 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
+# YENİ: GENİŞLETİLMİŞ KURUM LİSTESİ (ELAZIĞ)
 institutions = [
     {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
     {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
-    {"name": "Adliye", "lat": 38.6705, "lon": 39.2215}
+    {"name": "Adliye", "lat": 38.6705, "lon": 39.2215},
+    {"name": "Fırat Üniversitesi (Kampüs)", "lat": 38.6756, "lon": 39.1970},
+    {"name": "Elazığ Belediyesi", "lat": 38.6782, "lon": 39.2248},
+    {"name": "İl Emniyet Müdürlüğü", "lat": 38.6710, "lon": 39.1840},
+    {"name": "İl Milli Eğitim Müdürlüğü", "lat": 38.6795, "lon": 39.2220},
+    {"name": "8. Kolordu Komutanlığı", "lat": 38.6665, "lon": 39.2130},
+    {"name": "Elazığ Havalimanı", "lat": 38.6052, "lon": 39.2905}
 ]
 
 # --- 5. SIDEBAR (DETAYLI FİLTRELEME) ---
@@ -114,7 +121,6 @@ with st.sidebar:
     else:
         st.success(f"Hoş geldin, {st.session_state.users[st.session_state.current_user]['ad']}")
         
-        # YENİ: Detaylı Filtreleme
         with st.expander("🔍 Detaylı İlan Filtrele", expanded=True):
             max_fiyat = st.slider("Maks. Bütçe", 0, 50000, 50000, step=500)
             oda_sec = st.selectbox("Oda Sayısı", ["Farketmez", "1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
@@ -126,7 +132,7 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- FİLTRELEME MANTIĞI GÜNCELLEMESİ ---
+# --- FİLTRELEME MANTIĞI ---
 f_houses = [h for h in st.session_state.houses if h["price"] <= max_fiyat]
 if oda_sec != "Farketmez":
     f_houses = [h for h in f_houses if h.get("rooms", "Belirtilmemiş") == oda_sec]
@@ -138,7 +144,6 @@ if kurum_sec != "Farketmez":
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
 # --- 6. ANA PANEL VE SEKMELER ---
-# YENİ: Admin ise 6. sekme eklenir
 tab_isimleri = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 if st.session_state.user_role == "yonetici": tab_isimleri.append("📊 Admin Paneli")
 
@@ -150,15 +155,16 @@ with t1:
     for i in institutions: folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
     
     if st.session_state.logged_in:
-        # YENİ: Harita Kümeleme (Marker Cluster)
         marker_cluster = MarkerCluster().add_to(m)
         
         for h in f_houses:
-            dist_list = "<ul>" + "".join([f"<li>{i['name']}: {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in institutions]) + "</ul>"
+            # YENİ: Liste çok uzun olacağı için kaydırılabilir (scrollable) bir div içine aldım
+            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in institutions])
+            dist_list = f"<ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>"
+            
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             
-            # YENİ: Google Maps Navigasyon Linki ve Detaylar
             oda_bilgisi = h.get('rooms', 'Belirtilmemiş')
             esya_bilgisi = "Eşyalı" if h.get('furnished', False) else "Boş"
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
@@ -171,8 +177,11 @@ with t1:
                 <span style='background-color:#eee; padding:2px 5px; border-radius:4px; font-size:11px;'>{oda_bilgisi}</span>
                 <span style='background-color:#eee; padding:2px 5px; border-radius:4px; font-size:11px;'>{esya_bilgisi}</span>
                 <hr style='margin:8px 0;'>
-                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px;">📍 Google Haritalarda Yol Tarifi Al</a>
-                <p style='font-size:11px; margin-top:8px;'><b>Kurumlara Uzaklık:</b></p>{dist_list}
+                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px;">📍 Yol Tarifi Al</a>
+                <p style='font-size:11px; margin:8px 0 4px 0;'><b>Kurumlara Uzaklık:</b></p>
+                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background-color: #fcfcfc;'>
+                    {dist_list}
+                </div>
             </div>"""
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
@@ -188,12 +197,9 @@ with t2:
             
         with st.form("add_f"):
             ti, pr = st.text_input("Başlık (*Zorunlu*)"), st.number_input("Kira (TL) (*Zorunlu*)", min_value=0, step=500)
-            
-            # YENİ: Oda ve Eşya Girişi
             c1, c2 = st.columns(2)
             rm = c1.selectbox("Oda Sayısı", ["1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             fr = c2.checkbox("Bu ev eşyalı mı?")
-            
             ad, co = st.text_area("Adres (*Zorunlu*)", value=a_n), st.text_area("Açıklama")
             fl = st.file_uploader("Fotoğraf", type=["jpg", "png"])
             
@@ -264,7 +270,6 @@ with t5:
             with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
                 st.write(f"**{m['house']}** | {m['from']} ➔ {m['to']}\n{m['text']}")
 
-# YENİ: Yönetici Paneli
 if st.session_state.user_role == "yonetici" and len(tabs) == 6:
     with tabs[5]:
         st.header("📊 Sistem İstatistikleri")
@@ -272,6 +277,6 @@ if st.session_state.user_role == "yonetici" and len(tabs) == 6:
         c1.metric("Toplam Kullanıcı", len(st.session_state.users))
         c2.metric("Aktif İlan", len(st.session_state.houses))
         
-        ort_kira = sum([h['price'] for h in st.session_state.houses]) / len(st.session_state.houses) if st.session_state.houses else 0
+        ort_kira = sum([int(h['price']) for h in st.session_state.houses]) / len(st.session_state.houses) if st.session_state.houses else 0
         c3.metric("Ortalama Kira", f"{int(ort_kira)} TL")
         c4.metric("Toplam Mesaj", len(st.session_state.messages))
