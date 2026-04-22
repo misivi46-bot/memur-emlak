@@ -35,7 +35,7 @@ def icerik_uygun_mu(metin):
 # --- 3. ADRES VE MESAFE FONKSİYONLARI ---
 def koordinati_adrese_cevir(lat, lon):
     try:
-        geolocator = Nominatim(user_agent="memur_emlak_portal_sinan")
+        geolocator = Nominatim(user_agent="memur_emlak_portal_v3")
         location = geolocator.reverse(f"{lat}, {lon}", timeout=3)
         return location.address if location else "Adres tespit edilemedi."
     except:
@@ -53,7 +53,6 @@ if 'houses' not in st.session_state: st.session_state.houses = []
 if 'messages' not in st.session_state: st.session_state.messages = []
 if 'users' not in st.session_state:
     st.session_state.users = {
-        # YENİ: "favorites" listesi eklendi
         "misivi46": {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan", "favorites": []}
     }
 
@@ -72,7 +71,7 @@ institutions = [
 with st.sidebar:
     st.title("👤 Üye Paneli")
     
-    # Filtreleme Değişkenleri (Varsayılan Değerler)
+    # Filtreleme Değişkenleri (Varsayılan)
     max_fiyat = 50000
     kurum_sec = "Farketmez"
     max_mesafe = 50.0
@@ -87,7 +86,6 @@ with st.sidebar:
                     if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
                         st.session_state.logged_in, st.session_state.current_user = True, u
                         st.session_state.user_role = st.session_state.users[u]["rol"]
-                        # Eski üyelerin favori listesi yoksa oluştur
                         if "favorites" not in st.session_state.users[u]:
                             st.session_state.users[u]["favorites"] = []
                         st.rerun()
@@ -99,15 +97,13 @@ with st.sidebar:
                 n_p = st.text_input("Şifre", type="password")
                 if st.form_submit_button("Kayıt Ol"):
                     if n_ad and n_u and n_p:
-                        # YENİ: Kayıt olurken boş bir favori listesi açılır
                         st.session_state.users[n_u] = {"sifre": n_p, "rol": "kullanici", "ad": n_ad, "favorites": []}
                         st.success("Kayıt başarılı! Giriş yapabilirsiniz.")
     else:
         st.success(f"Merhaba, {st.session_state.users[st.session_state.current_user]['ad']}")
         
-        # YENİ: FİLTRELEME SİSTEMİ
         with st.expander("🔍 Harita ve İlanları Filtrele", expanded=True):
-            st.markdown("<small>Aşağıdaki ayarlar haritayı ve listeyi otomatik günceller.</small>", unsafe_allow_html=True)
+            st.markdown("<small>Aşağıdaki ayarlar haritayı otomatik günceller.</small>", unsafe_allow_html=True)
             max_fiyat = st.slider("Maksimum Bütçe (TL)", 0, 50000, 50000, step=1000)
             kurum_sec = st.selectbox("Şu Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in institutions])
             if kurum_sec != "Farketmez":
@@ -131,7 +127,7 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- FİLTRELEME MANTIĞI (Haritadan ve Listeden Önce Çalışır) ---
+# --- FİLTRELEME MANTIĞI ---
 filtered_houses = []
 for h in st.session_state.houses:
     if h["price"] <= max_fiyat:
@@ -145,8 +141,7 @@ for h in st.session_state.houses:
                     filtered_houses.append(h)
 
 # --- 6. ANA EKRAN ---
-# YENİ: Favoriler sekmesi eklendi
-t1, t2, t3, t4, t5 = st.tabs(["📍 Harita", "🏠 İlan Ekle", "📋 İlanlar", "⭐ Favorilerim", "📩 Mesajlarım"])
+t1, t2, t3, t4, t5 = st.tabs(["📍 Harita", "🏠 İlan Ekle", "📋 İlanlar", "⭐ Favoriler", "📩 Mesajlar"])
 
 # -- SEKME 1: HARİTA --
 with t1:
@@ -156,7 +151,6 @@ with t1:
         folium.Marker([inst["lat"], inst["lon"]], popup=inst["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
     if st.session_state.logged_in:
-        # Filtrelenmiş evleri haritaya bas
         for house in filtered_houses:
             dist_list = "<ul>"
             for inst in institutions:
@@ -164,9 +158,7 @@ with t1:
                 dist_list += f"<li>{inst['name']}: {d} km</li>"
             dist_list += "</ul>"
 
-            img_html = ""
-            if house.get("image"):
-                img_html = f'<img src="data:image/jpeg;base64,{house["image"]}" style="width:100%; border-radius:8px; margin-bottom:10px;">'
+            img_html = f'<img src="data:image/jpeg;base64,{house["image"]}" style="width:100%; border-radius:8px; margin-bottom:10px;">' if house.get("image") else ""
 
             popup_content = f"""
             <div style="width:230px; font-family: sans-serif;">
@@ -186,44 +178,63 @@ with t1:
                 icon=folium.Icon(color="green", icon="home")
             ).add_to(m)
     else:
-        st.info("👋 Haritada ilanları görmek için lütfen giriş yapın. Sol menüden üye olabilirsiniz.")
+        st.info("👋 Haritada ilanları görmek için lütfen giriş yapın.")
         
     map_res = st_folium(m, use_container_width=True, height=550)
 
-# -- SEKME 2: İLAN EKLE --
+# -- SEKME 2: İLAN EKLE (GÜNCELLENEN VE DÜZELTİLEN KISIM) --
 with t2:
-    if not st.session_state.logged_in: st.warning("Lütfen giriş yapın.")
+    if not st.session_state.logged_in: 
+        st.warning("Lütfen ilan eklemek için önce giriş yapın.")
     else:
         lat_now, lon_now, addr_now = 38.6748, 39.2225, ""
         if map_res and map_res.get("last_clicked"):
             lat_now, lon_now = map_res["last_clicked"]["lat"], map_res["last_clicked"]["lng"]
             addr_now = koordinati_adrese_cevir(lat_now, lon_now)
-            st.success(f"📍 Konum Seçildi: {addr_now}")
+            st.success(f"📍 Haritadan Konum Seçildi: {addr_now}")
             
         with st.form("h_form"):
-            h_t = st.text_input("İlan Başlığı")
-            h_p = st.number_input("Aylık Kira (TL)", min_value=0)
-            h_a = st.text_area("Açık Adres", value=addr_now)
+            st.markdown("### Yeni İlan Detayları")
+            h_t = st.text_input("İlan Başlığı (*Zorunlu*)")
+            h_p = st.number_input("Aylık Kira (TL) (*Zorunlu*)", min_value=0, step=500)
+            h_a = st.text_area("Açık Adres (*Zorunlu*)", value=addr_now)
             h_c = st.text_area("Açıklama")
-            h_f = st.file_uploader("Fotoğraf", type=["jpg", "png", "jpeg"])
-            if st.form_submit_button("Yayınla"):
-                if icerik_uygun_mu(h_t) and icerik_uygun_mu(h_c) and h_t and h_p > 0:
-                    b64 = base64.b64encode(h_f.read()).decode() if h_f else ""
-                    # Güvenli ID oluşturma
-                    new_id = max([h["id"] for h in st.session_state.houses], default=0) + 1
+            h_f = st.file_uploader("Fotoğraf (İsteğe Bağlı)", type=["jpg", "png", "jpeg"])
+            
+            submitted = st.form_submit_button("İlanı Yayınla")
+            
+            if submitted:
+                # 1. Zararlı kelime kontrolü
+                if not icerik_uygun_mu(h_t) or not icerik_uygun_mu(h_c):
+                    st.error("❌ Hata: İlan başlığı veya açıklamasında kurallara aykırı kelimeler tespit edildi.")
+                # 2. Boş alan ve 0 TL kontrolü (BUTONUN BOZUK GÖRÜNMESİNİN SEBEBİ BUYDU)
+                elif not h_t or not h_a or h_p <= 0:
+                    st.error("❌ Lütfen Başlık, Açık Adres ve 0'dan büyük bir Kira Bedeli girdiğinizden emin olun.")
+                # 3. Her şey doğruysa kaydet
+                else:
+                    b64 = base64.b64encode(h_f.read()).decode() if h_f is not None else ""
+                    # Güvenli ve çakışmayan ID algoritması
+                    yeni_id = max([h["id"] for h in st.session_state.houses]) + 1 if st.session_state.houses else 1
+                    
                     st.session_state.houses.append({
-                        "id": new_id, "title": h_t, "price": h_p,
-                        "address": h_a, "comment": h_c, "lat": lat_now, "lon": lon_now,
-                        "image": b64, "owner": st.session_state.current_user
+                        "id": yeni_id, 
+                        "title": h_t, 
+                        "price": h_p,
+                        "address": h_a, 
+                        "comment": h_c, 
+                        "lat": lat_now, 
+                        "lon": lon_now,
+                        "image": b64, 
+                        "owner": st.session_state.current_user
                     })
-                    st.success("İlan eklendi!")
+                    st.success("✅ İlanınız başarıyla eklendi! Haritadan veya İlanlar sekmesinden görebilirsiniz.")
                     st.rerun()
 
-# -- SEKME 3: İLANLAR (Filtrelenmiş) --
+# -- SEKME 3: İLANLAR --
 with t3:
     if not st.session_state.logged_in: st.warning("Giriş yapınız.")
     else:
-        st.markdown(f"**Toplam Gösterilen İlan:** {len(filtered_houses)} *(Filtrelere Göre)*")
+        st.markdown(f"**Toplam Gösterilen İlan:** {len(filtered_houses)} *(Sol menüdeki filtrelere göredir)*")
         for house in filtered_houses:
             with st.expander(f"🏠 {house['title']} - {house['price']} TL"):
                 c1, c2 = st.columns([1, 2])
@@ -231,11 +242,9 @@ with t3:
                 c2.write(f"**Adres:** {house['address']}")
                 c2.write(f"**Açıklama:** {house['comment']}")
                 
-                # YENİ: Favori Butonu
                 fav_list = st.session_state.users[st.session_state.current_user].get("favorites", [])
                 is_fav = house["id"] in fav_list
                 
-                # Butonları yan yana dizelim
                 b1, b2, b3 = st.columns([1,1,2])
                 with b1:
                     if st.button("❤️ Favoriden Çıkar" if is_fav else "🤍 Favoriye Ekle", key=f"fav_{house['id']}"):
@@ -250,8 +259,8 @@ with t3:
                             st.session_state.houses = [h for h in st.session_state.houses if h["id"] != house["id"]]
                             st.rerun()
                 
-                # Mesaj Gönderme Bölümü
                 if house["owner"] != st.session_state.current_user:
+                    st.markdown("---")
                     m_txt = st.text_input("İlan sahibine mesaj yazın", key=f"ti_{house['id']}")
                     if st.button("Mesaj Gönder", key=f"tb_{house['id']}"):
                         if m_txt and icerik_uygun_mu(m_txt):
@@ -261,7 +270,7 @@ with t3:
                             })
                             st.success("Mesaj iletildi.")
 
-# -- SEKME 4: FAVORİLERİM --
+# -- SEKME 4: FAVORİLER --
 with t4:
     if not st.session_state.logged_in: st.warning("Giriş yapınız.")
     else:
@@ -282,14 +291,14 @@ with t4:
                         st.rerun()
                     st.markdown("---")
 
-# -- SEKME 5: MESAJLARIM --
+# -- SEKME 5: MESAJLAR --
 with t5:
     if not st.session_state.logged_in: st.warning("Giriş yapınız.")
     else:
         my_m = [m for m in st.session_state.messages if m["from"] == st.session_state.current_user or m["to"] == st.session_state.current_user or st.session_state.user_role == "yonetici"]
-        if not my_m: st.info("Mesaj yok.")
+        if not my_m: st.info("Henüz mesajınız bulunmuyor.")
         for m in my_m:
             with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
-                st.write(f"**{m['house']}** | {st.session_state.users[m['from']]['ad']} ➔ {st.session_state.users[m['to']]['ad']}")
+                st.write(f"**İlan:** {m['house']} | **Gönderen:** {st.session_state.users[m['from']]['ad']} ➔ **Alıcı:** {st.session_state.users[m['to']]['ad']}")
                 st.write(m["text"])
                 st.caption(m["date"])
