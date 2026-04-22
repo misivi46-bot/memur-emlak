@@ -14,7 +14,8 @@ import io
 
 # --- 1. SAYFA AYARLARI ---
 st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", page_icon="🏢")
-
+st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
+st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
