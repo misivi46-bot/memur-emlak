@@ -35,7 +35,7 @@ def icerik_uygun_mu(metin):
 # --- 3. ADRES VE MESAFE FONKSİYONLARI ---
 def koordinati_adrese_cevir(lat, lon):
     try:
-        geolocator = Nominatim(user_agent="memur_emlak_portal_v3")
+        geolocator = Nominatim(user_agent="memur_emlak_portal_v4")
         location = geolocator.reverse(f"{lat}, {lon}", timeout=3)
         return location.address if location else "Adres tespit edilemedi."
     except:
@@ -71,7 +71,6 @@ institutions = [
 with st.sidebar:
     st.title("👤 Üye Paneli")
     
-    # Filtreleme Değişkenleri (Varsayılan)
     max_fiyat = 50000
     kurum_sec = "Farketmez"
     max_mesafe = 50.0
@@ -180,9 +179,10 @@ with t1:
     else:
         st.info("👋 Haritada ilanları görmek için lütfen giriş yapın.")
         
-    map_res = st_folium(m, use_container_width=True, height=550)
+    # ÇÖZÜMÜN UYGULANDIĞI YER: Sadece son tıklanan koordinatı çek, sayfa yenilenmesini (rerun) engelle
+    map_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
 
-# -- SEKME 2: İLAN EKLE (GÜNCELLENEN VE DÜZELTİLEN KISIM) --
+# -- SEKME 2: İLAN EKLE --
 with t2:
     if not st.session_state.logged_in: 
         st.warning("Lütfen ilan eklemek için önce giriş yapın.")
@@ -204,16 +204,12 @@ with t2:
             submitted = st.form_submit_button("İlanı Yayınla")
             
             if submitted:
-                # 1. Zararlı kelime kontrolü
                 if not icerik_uygun_mu(h_t) or not icerik_uygun_mu(h_c):
                     st.error("❌ Hata: İlan başlığı veya açıklamasında kurallara aykırı kelimeler tespit edildi.")
-                # 2. Boş alan ve 0 TL kontrolü (BUTONUN BOZUK GÖRÜNMESİNİN SEBEBİ BUYDU)
                 elif not h_t or not h_a or h_p <= 0:
                     st.error("❌ Lütfen Başlık, Açık Adres ve 0'dan büyük bir Kira Bedeli girdiğinizden emin olun.")
-                # 3. Her şey doğruysa kaydet
                 else:
                     b64 = base64.b64encode(h_f.read()).decode() if h_f is not None else ""
-                    # Güvenli ve çakışmayan ID algoritması
                     yeni_id = max([h["id"] for h in st.session_state.houses]) + 1 if st.session_state.houses else 1
                     
                     st.session_state.houses.append({
