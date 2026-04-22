@@ -1,0 +1,16 @@
+{
+  "name": "Memur Tayin Portalı",
+  "short_name": "MemurEmlak",
+  "description": "Memurlar için tayin ve emlak haritası",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#27ae60",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2942/2942933.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
