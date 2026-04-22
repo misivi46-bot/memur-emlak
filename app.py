@@ -7,20 +7,25 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
 from datetime import datetime
 
-# --- SAYFA AYARLARI ---
+# --- 1. SAYFA VE GÖRÜNÜM AYARLARI ---
 st.set_page_config(page_title="Memur Emlak & Tayin Haritası", layout="wide")
 
-# HARİTA TAŞMASINI ENGELLEYEN CSS KODU (Bunu ekle)
+# Haritanın çerçevenin dışına taşmasını engelleyen CSS
 st.markdown("""
     <style>
         iframe {
             max-width: 100% !important;
             overflow: hidden !important;
+            border-radius: 10px;
+        }
+        .main {
+            background-color: #f5f7f9;
         }
     </style>
 """, unsafe_allow_html=True)
-# --- 1. ZARARLI İÇERİK FİLTRESİ ---
-YASAKLI_KELIMELER = ["aptal", "salak", "parti", "siyaset", "irk", "defol", "lan"]
+
+# --- 2. ZARARLI İÇERİK FİLTRESİ ---
+YASAKLI_KELIMELER = ["aptal", "salak", "parti", "siyaset", "ırk", "defol", "lan"]
 
 def icerik_uygun_mu(metin):
     metin_kucuk = metin.lower()
@@ -29,223 +34,179 @@ def icerik_uygun_mu(metin):
             return False
     return True
 
-# --- KOORDİNATI ADRESE ÇEVİRME ---
+# --- 3. ADRES VE MESAFE FONKSİYONLARI ---
 def koordinati_adrese_cevir(lat, lon):
     try:
-        geolocator = Nominatim(user_agent="memur_emlak_app_v2")
+        geolocator = Nominatim(user_agent="memur_emlak_portal")
         location = geolocator.reverse(f"{lat}, {lon}", timeout=3)
-        if location:
-            return location.address
-        return "Adres bulunamadı."
+        return location.address if location else "Adres tespit edilemedi."
     except:
-        return "Adres alınamadı."
-
-# --- 2. VERİ ALTYAPISI ---
-# Kurumlar
-institutions = [
-    {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
-    {"name": "Eğitim ve Araştırma Hastanesi", "lat": 38.6738, "lon": 39.1963},
-    {"name": "Adliye", "lat": 38.6705, "lon": 39.2215}
-]
-
-# Hafızadaki Veriler
-if 'houses' not in st.session_state:
-    st.session_state.houses = []
-    
-if 'users' not in st.session_state:
-    st.session_state.users = {
-        "misivi46": {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan"}
-    }
-
-# YENİ: Mesajlar Veritabanı
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-
-# Oturum Durumu
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.current_user = None
-    st.session_state.user_role = None
+        return "Adres servisi şu an meşgul, lütfen manuel giriniz."
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) \
-        * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    return round(R * c, 2)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# --- 3. YAN MENÜ ---
+# --- 4. VERİ TABANI SİMÜLASYONU ---
+if 'houses' not in st.session_state: st.session_state.houses = []
+if 'messages' not in st.session_state: st.session_state.messages = []
+if 'users' not in st.session_state:
+    st.session_state.users = {
+        "misivi46": {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan"}
+    }
+
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.current_user = None
+    st.session_state.user_role = None
+
+# Örnek Kurumlar (Elazığ)
+institutions = [
+    {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
+    {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
+    {"name": "Adliye", "lat": 38.6705, "lon": 39.2215}
+]
+
+# --- 5. YAN MENÜ (AUTH & PROFİL) ---
 with st.sidebar:
-    st.title("🔑 Kullanıcı İşlemleri")
+    st.title("👤 Üye Paneli")
     
     if not st.session_state.logged_in:
-        if st.button("🌐 Google Hesabı ile Devam Et", use_container_width=True):
-            st.info("API bağlantısı kurulum aşamasındadır.")
+        if st.button("🌐 Google ile Giriş Yap", use_container_width=True):
+            st.info("OAuth yapılandırması bekleniyor.")
             
-        st.markdown("<div style='text-align: center; color: gray; margin: 10px 0;'>— Veya —</div>", unsafe_allow_html=True)
-        secim = st.radio("İşlem Seçin:", ["Giriş Yap", "Üye Ol"], label_visibility="collapsed")
+        auth_mode = st.radio("İşlem:", ["Giriş Yap", "Üye Ol"])
         
-        if secim == "Giriş Yap":
-            with st.form("login_form"):
-                u_name = st.text_input("Kullanıcı Adı")
-                u_pass = st.text_input("Şifre", type="password")
-                if st.form_submit_button("Giriş Yap"):
-                    if u_name in st.session_state.users and st.session_state.users[u_name]["sifre"] == u_pass:
-                        st.session_state.logged_in = True
-                        st.session_state.current_user = u_name
-                        st.session_state.user_role = st.session_state.users[u_name]["rol"]
+        if auth_mode == "Giriş Yap":
+            with st.form("l_form"):
+                u = st.text_input("Kullanıcı Adı")
+                p = st.text_input("Şifre", type="password")
+                if st.form_submit_button("Giriş", use_container_width=True):
+                    if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
+                        st.session_state.logged_in, st.session_state.current_user = True, u
+                        st.session_state.user_role = st.session_state.users[u]["rol"]
                         st.rerun()
-                    else:
-                        st.error("Hatalı bilgiler!")
-                        
-        elif secim == "Üye Ol":
-            with st.form("signup_form"):
-                y_ad = st.text_input("Ad Soyad*")
-                y_kullanici = st.text_input("Kullanıcı Adı*")
-                y_sifre = st.text_input("Şifre*", type="password")
+                    else: st.error("Hatalı giriş.")
+        else:
+            with st.form("s_form"):
+                n_ad = st.text_input("Ad Soyad")
+                n_u = st.text_input("Kullanıcı Adı")
+                n_p = st.text_input("Şifre", type="password")
                 if st.form_submit_button("Kayıt Ol"):
-                    if y_ad and y_kullanici and y_sifre:
-                        st.session_state.users[y_kullanici] = {"sifre": y_sifre, "rol": "kullanici", "ad": y_ad}
-                        st.success("Kaydolundu! Giriş yapabilirsiniz.")
-
+                    if n_ad and n_u and n_p:
+                        st.session_state.users[n_u] = {"sifre": n_p, "rol": "kullanici", "ad": n_ad}
+                        st.success("Kayıt tamam!")
     else:
         st.success(f"Hoş geldin, {st.session_state.users[st.session_state.current_user]['ad']}")
         
-        # Profil Ayarları
-        with st.expander("⚙️ Profil Ayarları"):
+        with st.expander("⚙️ Şifre Değiştir"):
             if st.session_state.user_role == "yonetici":
-                target = st.selectbox("Kullanıcı Seç:", list(st.session_state.users.keys()))
-                new_pw = st.text_input("Yeni Şifre", type="password")
-                if st.button("Şifreyi Sıfırla"):
-                    st.session_state.users[target]["sifre"] = new_pw
-                    st.success("Güncellendi.")
-            else:
-                old_p = st.text_input("Eski Şifre", type="password")
+                target = st.selectbox("Üye Seç:", list(st.session_state.users.keys()))
                 new_p = st.text_input("Yeni Şifre", type="password")
-                if st.button("Şifremi Değiştir"):
-                    if old_p == st.session_state.users[st.session_state.current_user]["sifre"]:
-                        st.session_state.users[st.session_state.current_user]["sifre"] = new_p
-                        st.success("Değiştirildi.")
+                if st.button("Şifreyi Güncelle"):
+                    st.session_state.users[target]["sifre"] = new_p
+                    st.success("İşlem başarılı.")
+            else:
+                old = st.text_input("Mevcut Şifre", type="password")
+                new = st.text_input("Yeni Şifre", type="password")
+                if st.button("Güncelle"):
+                    if old == st.session_state.users[st.session_state.current_user]["sifre"]:
+                        st.session_state.users[st.session_state.current_user]["sifre"] = new
+                        st.success("Güncellendi.")
 
-        if st.button("🚪 Çıkış Yap"):
+        if st.button("🚪 Çıkış Yap", use_container_width=True):
             st.session_state.logged_in = False
             st.rerun()
 
-# --- 4. ANA EKRAN ---
-st.title("🗺️ Memur Tayin & Emlak Uygulaması")
+# --- 6. ANA ARAYÜZ (TABS) ---
+st.title("🗺️ Memur Emlak & Tayin Portalı")
+t1, t2, t3, t4 = st.tabs(["📍 İlan Haritası", "🏠 İlan Ekle", "📋 İlan Yönetimi", "📩 Mesajlarım"])
 
-tab_h, tab_e, tab_y, tab_m = st.tabs(["📍 Harita", "🏠 İlan Ekle", "⚙️ Yönetim", "💬 Mesajlarım"])
-
-# -- TAB 1: HARİTA --
-with tab_h:
-    m = folium.Map(location=[38.6748, 39.2225], zoom_start=13, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google Hybrid')
-
+# HARİTA SEKİMESİ
+with t1:
+    if not st.session_state.logged_in:
+        st.info("İlanları görmek için lütfen giriş yapın. Kurum yerleri herkese açıktır.")
+    
+    m = folium.Map(location=[38.6748, 39.2225], zoom_start=13, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
+    
     for inst in institutions:
-        folium.Marker([inst["lat"], inst["lon"]], popup=inst["name"], icon=folium.Icon(color="blue")).add_to(m)
-
+        folium.Marker([inst["lat"], inst["lon"]], popup=inst["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
+    
     if st.session_state.logged_in:
         for house in st.session_state.houses:
-            popup_text = f"<b>{house['title']}</b><br>Kira: {house['price']} TL"
-            folium.Marker([house["lat"], house["lon"]], popup=popup_text, icon=folium.Icon(color="green", icon="home")).add_to(m)
+            folium.Marker([house["lat"], house["lon"]], popup=f"<b>{house['title']}</b>", icon=folium.Icon(color="green", icon="home")).add_to(m)
+    
+    # Taşma sorunu çözülmüş harita bileşeni
+    map_res = st_folium(m, use_container_width=True, height=550)
 
-    map_data = st_folium(m, width="100%", height=500)
-
-# -- TAB 2: İLAN EKLE --
-with tab_e:
-    if not st.session_state.logged_in:
-        st.warning("Giriş yapmalısınız.")
+# İLAN EKLEME SEKİMESİ
+with t2:
+    if not st.session_state.logged_in: st.warning("Giriş yapmanız gerekmektedir.")
     else:
-        # Adres çekme işlemi
-        lat_c, lon_c = 38.6748, 39.2225
-        auto_addr = ""
-        if map_data and map_data.get("last_clicked"):
-            lat_c = map_data["last_clicked"]["lat"]
-            lon_c = map_data["last_clicked"]["lng"]
-            auto_addr = koordinati_adrese_cevir(lat_c, lon_c)
-
-        with st.form("add_form"):
-            t = st.text_input("Başlık")
-            p = st.number_input("Kira", min_value=0)
-            a = st.text_area("Açık Adres", value=auto_addr)
-            c = st.text_area("Açıklama")
-            img = st.file_uploader("Fotoğraf", type=["jpg", "png"])
-            if st.form_submit_button("Ekle"):
-                if icerik_uygun_mu(t) and icerik_uygun_mu(c) and t and p > 0:
-                    img_b64 = base64.b64encode(img.read()).decode() if img else ""
+        st.subheader("Yeni İlan Oluştur")
+        lat_now, lon_now, addr_now = 38.6748, 39.2225, ""
+        if map_res and map_res.get("last_clicked"):
+            lat_now = map_res["last_clicked"]["lat"]
+            lon_now = map_res["last_clicked"]["lng"]
+            addr_now = koordinati_adrese_cevir(lat_now, lon_now)
+            st.success(f"Seçilen Adres: {addr_now}")
+            
+        with st.form("h_form"):
+            h_t = st.text_input("İlan Başlığı")
+            h_p = st.number_input("Aylık Kira (TL)", min_value=0)
+            h_a = st.text_area("Açık Adres", value=addr_now)
+            h_c = st.text_area("Detaylı Açıklama")
+            h_f = st.file_uploader("Ev Fotoğrafı", type=["jpg", "png", "jpeg"])
+            if st.form_submit_button("İlanı Yayınla"):
+                if icerik_uygun_mu(h_t) and icerik_uygun_mu(h_c) and h_t and h_p > 0:
+                    b64 = base64.b64encode(h_f.read()).decode() if h_f else ""
                     st.session_state.houses.append({
-                        "id": len(st.session_state.houses) + 1, "title": t, "price": p,
-                        "lat": lat_c, "lon": lon_c, "address": a, "comment": c,
-                        "image_b64": img_b64, "owner": st.session_state.current_user
+                        "id": len(st.session_state.houses)+1, "title": h_t, "price": h_p,
+                        "address": h_a, "comment": h_c, "lat": lat_now, "lon": lon_now,
+                        "image": b64, "owner": st.session_state.current_user
                     })
-                    st.success("Eklendi.")
+                    st.success("İlan eklendi!")
                     st.rerun()
 
-# -- TAB 3: YÖNETİM VE İLAN DETAY (MESAJLAŞMA BURADA) --
-with tab_y:
-    if not st.session_state.logged_in:
-        st.warning("Giriş yapmalısınız.")
+# İLAN YÖNETİMİ VE İLETİŞİM
+with t3:
+    if not st.session_state.logged_in: st.warning("Giriş yapınız.")
     else:
-        st.subheader("İlan Detayları ve İletişim")
-        for idx, house in enumerate(st.session_state.houses):
-            with st.expander(f"📌 {house['title']} - {house['price']} TL"):
-                col_i, col_d = st.columns([1, 2])
-                with col_i:
-                    if house.get('image_b64'):
-                        st.image(f"data:image/jpeg;base64,{house['image_b64']}")
-                with col_d:
-                    st.write(f"**Adres:** {house['address']}")
-                    st.write(f"**Açıklama:** {house['comment']}")
-                    st.write(f"**Sahibi:** {st.session_state.users[house['owner']]['ad']}")
+        for i, house in enumerate(st.session_state.houses):
+            with st.expander(f"🏠 {house['title']} - {house['price']} TL"):
+                c1, c2 = st.columns([1, 2])
+                if house["image"]: c1.image(f"data:image/jpeg;base64,{house['image']}")
+                c2.write(f"**Adres:** {house['address']}")
+                c2.write(f"**Açıklama:** {house['comment']}")
                 
-                st.markdown("---")
-                # MESAJ GÖNDERME BÖLÜMÜ
+                # Mesaj Gönderme Bölümü
                 if house["owner"] != st.session_state.current_user:
-                    st.write("📩 **İlan Sahibiyle İletişime Geç**")
-                    msg_text = st.text_input("Mesajınız", key=f"msg_input_{idx}")
-                    if st.button("Gönder", key=f"send_btn_{idx}"):
-                        if msg_text and icerik_uygun_mu(msg_text):
+                    m_txt = st.text_input("İlan sahibine mesaj yazın", key=f"ti_{i}")
+                    if st.button("Mesaj Gönder", key=f"tb_{i}"):
+                        if m_txt and icerik_uygun_mu(m_txt):
                             st.session_state.messages.append({
-                                "house_id": house["id"],
-                                "sender": st.session_state.current_user,
-                                "receiver": house["owner"],
-                                "text": msg_text,
-                                "time": datetime.now().strftime("%H:%M")
+                                "house": house["title"], "from": st.session_state.current_user,
+                                "to": house["owner"], "text": m_txt, "date": datetime.now().strftime("%d.%m %H:%M")
                             })
-                            st.success("Mesaj gönderildi!")
-                        else:
-                            st.error("Geçersiz içerik.")
+                            st.success("Mesaj iletildi.")
                 
                 if st.session_state.user_role == "yonetici" or house["owner"] == st.session_state.current_user:
-                    if st.button(f"🗑️ İlanı Sil", key=f"del_{idx}"):
-                        st.session_state.houses.pop(idx)
+                    if st.button("🗑️ İlanı Kaldır", key=f"del_{i}"):
+                        st.session_state.houses.pop(i)
                         st.rerun()
 
-# -- TAB 4: MESAJLARIM (ÖZEL İLETİŞİM) --
-with tab_m:
-    if not st.session_state.logged_in:
-        st.warning("Mesajlarınızı görmek için giriş yapın.")
+# MESAJLAR SEKİMESİ
+with t4:
+    if not st.session_state.logged_in: st.warning("Giriş yapınız.")
     else:
-        st.subheader("Gelen ve Giden Mesajlar")
-        # Gizlilik Filtresi: Sadece gönderen, alan veya admin görebilir
-        relevant_msgs = [m for m in st.session_state.messages if 
-                         m["sender"] == st.session_state.current_user or 
-                         m["receiver"] == st.session_state.current_user or 
-                         st.session_state.user_role == "yonetici"]
-        
-        if not relevant_msgs:
-            st.info("Henüz mesajınız bulunmuyor.")
-        else:
-            for m in relevant_msgs:
-                sender_name = st.session_state.users[m['sender']]['ad']
-                receiver_name = st.session_state.users[m['receiver']]['ad']
-                
-                # Mesajın hangi ilanla ilgili olduğunu bulalım
-                h_title = next((h["title"] for h in st.session_state.houses if h["id"] == m["house_id"]), "Silinmiş İlan")
-                
-                with st.chat_message("user" if m["sender"] == st.session_state.current_user else "assistant"):
-                    st.write(f"**İlan:** {h_title}")
-                    st.write(f"**Kimden:** {sender_name} ➔ **Kime:** {receiver_name}")
-                    st.write(m["text"])
-                    st.caption(f"Saat: {m['time']}")
+        my_m = [m for m in st.session_state.messages if m["from"] == st.session_state.current_user or m["to"] == st.session_state.current_user or st.session_state.user_role == "yonetici"]
+        if not my_m: st.info("Mesaj trafiği yok.")
+        for m in my_m:
+            with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
+                st.write(f"**{m['house']}** hakkında")
+                st.write(f"**{st.session_state.users[m['from']]['ad']}** ➔ **{st.session_state.users[m['to']]['ad']}**")
+                st.write(m["text"])
+                st.caption(m["date"])
