@@ -10,6 +10,15 @@ from datetime import datetime
 # --- SAYFA AYARLARI ---
 st.set_page_config(page_title="Memur Emlak & Tayin Haritası", layout="wide")
 
+# HARİTA TAŞMASINI ENGELLEYEN CSS KODU (Bunu ekle)
+st.markdown("""
+    <style>
+        iframe {
+            max-width: 100% !important;
+            overflow: hidden !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 # --- 1. ZARARLI İÇERİK FİLTRESİ ---
 YASAKLI_KELIMELER = ["aptal", "salak", "parti", "siyaset", "irk", "defol", "lan"]
 
