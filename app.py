@@ -19,12 +19,12 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- YENİ: SADE ŞEHİR MANZARASI VE KOYU METİN TASARIM BLOĞU ---
+# --- YENİ: TEMA ÇAKIŞMASINI ÖNLEYEN VE OKUNABİLİRLİĞİ MAKSİMİZE EDEN CSS ---
 st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
-        /* Ana Arka Plan Görseli (Sade, aydınlık şehir manzarası) */
+        /* Ana Arka Plan Görseli */
         .stApp {
             background-image: url("https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2144&auto=format&fit=crop");
             background-size: cover;
@@ -32,24 +32,49 @@ st.markdown("""
             background-attachment: fixed;
         }
         
-        /* Arka planı aydınlatan ve yazıları okunaklı kılan BEYAZ cam katmanı */
+        /* Beyaz Cam Katmanı */
         .stApp::before {
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(255, 255, 255, 0.80); /* %80 Beyazlık */
-            backdrop-filter: blur(8px); /* Hafif bulanıklık */
+            background-color: rgba(255, 255, 255, 0.85); /* %85 Aydınlık cam */
+            backdrop-filter: blur(8px);
             z-index: -1;
         }
 
-        /* UYGULAMADAKİ BÜTÜN YAZILARI KOYU RENK YAPMA KURALI */
+        /* Tüm yazıları koyu yap (Butonlar hariç) */
         p, h1, h2, h3, h4, h5, h6, span, label, li, div[data-testid="stMarkdownContainer"] {
             color: #1a252f !important;
         }
 
-        /* Yan Menü (Sidebar) Aydınlık Cam Efekti */
+        /* 1. ÇÖZÜM: Fotoğraf Yükleme Alanı (File Uploader) Düzeltmesi */
+        [data-testid="stFileUploadDropzone"] {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            border: 2px dashed #27ae60 !important;
+            border-radius: 10px !important;
+        }
+        [data-testid="stFileUploadDropzone"] * {
+            color: #1a252f !important;
+        }
+
+        /* 2. ÇÖZÜM: Metin Giriş Kutuları ve Sayı Giriş Alanları Düzeltmesi */
+        .stTextInput input, .stNumberInput input, .stTextArea textarea {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            color: #1a252f !important;
+            border: 1px solid #ccc !important;
+        }
+        
+        /* 3. ÇÖZÜM: Selectbox (Açılır Kutu) Düzeltmesi */
+        [data-baseweb="select"] > div {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+        }
+        [data-baseweb="select"] * {
+            color: #1a252f !important;
+        }
+
+        /* Yan Menü (Sidebar) */
         [data-testid="stSidebar"] {
-            background-color: rgba(255, 255, 255, 0.70) !important;
+            background-color: rgba(255, 255, 255, 0.75) !important;
             backdrop-filter: blur(15px) !important;
             border-right: 1px solid rgba(255,255,255,0.8);
         }
@@ -65,13 +90,11 @@ st.markdown("""
             border: 1px solid rgba(255,255,255,0.8);
             margin-bottom: 20px;
         }
-        /* Sekme isimlerini (Harita, İlan Ekle vs) zorla koyu ve kalın yap */
-        div[role="radiogroup"] label, div[role="radiogroup"] p {
-            color: #1a252f !important;
+        div[role="radiogroup"] label {
             font-weight: 800 !important;
         }
 
-        /* Modern Butonlar (Yeşil zemin, BEYAZ yazı) */
+        /* Modern Butonlar (Yazıları zorla BEYAZ yapıldı ki yeşilde okunsun) */
         div.stButton > button, div.stFormSubmitButton > button {
             background: linear-gradient(135deg, #059669 0%, #27ae60 100%) !important;
             border: none !important;
@@ -80,9 +103,7 @@ st.markdown("""
             box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important; 
             transition: all 0.3s ease !important;
         }
-        /* Buton içindeki metinler beyaz kalsın ki yeşilin üstünde okunsun */
-        div.stButton > button p, div.stButton > button span, 
-        div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
+        div.stButton > button *, div.stFormSubmitButton > button * {
             color: white !important;
             font-weight: 700 !important; 
             font-size: 16px !important; 
@@ -92,7 +113,7 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(39, 174, 96, 0.45) !important;
         }
         
-        /* Formlar ve Açılır Kutular (Expander) Aydınlık Versiyon */
+        /* Formlar ve Expander Açılır Kutular */
         div[data-testid="stForm"], div[data-testid="stExpander"] {
             background-color: rgba(255, 255, 255, 0.85); 
             border-radius: 15px;
@@ -148,7 +169,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v18").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v19").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -339,6 +360,7 @@ if kurum_sec != "Farketmez":
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
 # --- 7. ANA PANEL VE SEKME YÖNETİMİ ---
+# HATA ÇÖZÜMÜ: Tüm yönlendirmeler için index mantığı (Hata ekranına veda!)
 tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 if st.session_state.user_role == "yonetici": tab_names.append("📊 Admin")
 
@@ -393,6 +415,7 @@ if aktif_sekme == "📍 Harita":
         returned_objects=["last_clicked"]
     )
     
+    # Haritaya tıklandığında güvenli sekme geçişi
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
         if st.session_state.get("prev_click") != click_data:
@@ -415,7 +438,7 @@ elif aktif_sekme == "🏠 İlan Ekle":
             rm = c1.selectbox("Oda Sayısı", ["1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             fr = c2.checkbox("Eşyalı")
             ad, co = st.text_area("Adres (*Zorunlu*)", value=a_n), st.text_area("Açıklama")
-            fl = st.file_uploader("Fotoğraf", type=["jpg", "png"])
+            fl = st.file_uploader("Fotoğraf Yükle", type=["jpg", "png"])
             if st.form_submit_button("İlanı Yayınla"):
                 if not icerik_uygun_mu(ti) or not icerik_uygun_mu(co): st.error("Kurallara aykırı kelime!")
                 elif not ti or not ad or pr <= 0: st.error("Zorunlu alanları doldurun.")
