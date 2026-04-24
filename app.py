@@ -71,7 +71,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v9").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v10").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -81,7 +81,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRASINA GÖRE) ---
+# --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRALI) ---
 PLAKA_SIRALI_ILLER = [
     "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
     "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
@@ -154,15 +154,14 @@ with st.sidebar:
     
     sehir_secenekleri = ["Türkiye Geneli"] + PLAKA_SIRALI_ILLER
     
-    # HATA ÇÖZÜMÜ: Otomatik GPS Yakalama ve Şehir Seçimini Zorlama
     if user_location and user_location.get('latitude') not in [None, 0.0] and user_location.get('longitude') not in [None, 0.0]:
-        sehir_secenekleri.insert(1, "📍 Bulunduğum Konum")
-        # Eğer yeni konum bulunduysa ve henüz hafızaya alınmadıysa, otomatik olarak GPS konumunu seç
+        if "📍 Bulunduğum Konum" not in sehir_secenekleri:
+            sehir_secenekleri.insert(1, "📍 Bulunduğum Konum")
+        
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
             
-    # Seçili konumu hafızada güvenli tut
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
         
@@ -170,18 +169,17 @@ with st.sidebar:
     if st.session_state.secili_konum_state in sehir_secenekleri:
         mevcut_indeks = sehir_secenekleri.index(st.session_state.secili_konum_state)
 
-    # Otomatik zoom işleminin bağlandığı selectbox
     secilen_sehir = st.selectbox("🏙️ Konum Seçin:", sehir_secenekleri, index=mevcut_indeks)
     st.session_state.secili_konum_state = secilen_sehir
 
-    # Seçime göre harita ayarları
     if secilen_sehir == "Türkiye Geneli":
         aktif_merkez = [39.0, 35.0]
         harita_zoom = 6
         aktif_kurumlar = TUM_KURUMLAR
     elif secilen_sehir == "📍 Bulunduğum Konum":
         aktif_merkez = [user_location['latitude'], user_location['longitude']]
-        harita_zoom = 14
+        # GÜNCELLEME: En yakın zoom seviyesi 18 olarak ayarlandı
+        harita_zoom = 18 
         aktif_kurumlar = [k for k in TUM_KURUMLAR if calculate_distance(aktif_merkez[0], aktif_merkez[1], k['lat'], k['lon']) <= 50]
     else:
         aktif_merkez = CITIES[secilen_sehir]["center"]
@@ -237,7 +235,7 @@ with st.sidebar:
             oda_sec = st.selectbox("Oda", ["Farketmez", "1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             esya_sec = st.radio("Eşya", ["Farketmez", "Eşyalı", "Boş"])
             
-            if secilen_sehir != "Türkiye Geneli":
+            if secilen_sehir not in ["Türkiye Geneli"]:
                 kurum_sec = st.selectbox("Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in aktif_kurumlar])
                 if kurum_sec != "Farketmez": max_mesafe = st.slider("Mesafe (km)", 0.5, 30.0, 5.0)
             else:
@@ -276,7 +274,6 @@ st.session_state.tab_index = tab_names.index(aktif_sekme)
 if aktif_sekme == "📍 Harita":
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
-    # HATA ÇÖZÜMÜ 2: Kurum ikonlarını standart "info-sign" ile değiştirdim (Kayıp İkon Sorunu Giderildi)
     if secilen_sehir != "Türkiye Geneli":
         for i in aktif_kurumlar: 
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
