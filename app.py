@@ -19,7 +19,7 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- YENİ: KUSURSUZ VE NET CSS TASARIM BLOĞU (Arka Plan Görseli Yok) ---
+# YENİ: MODERN CSS TASARIM BLOĞU (Solid Beyaz Zemin)
 st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
@@ -37,11 +37,10 @@ st.markdown("""
 
         /* Photo Upload Dropzone */
         [data-testid="stFileUploadDropzone"] {
-            background-color: #fdfdfd !important; /* light grey dropzone on white app */
+            background-color: #fdfdfd !important;
             border: 2px dashed #27ae60 !important;
             border-radius: 10px !important;
         }
-        /* Dropzone text specifically dark */
         [data-testid="stFileUploadDropzone"] * { color: #1a252f !important; }
 
         /* Metin Giriş Kutuları */
@@ -59,11 +58,11 @@ st.markdown("""
 
         /* Yan Menü (Sidebar) */
         [data-testid="stSidebar"] {
-            background-color: #f7f7f7 !important; /* slightly distinct light grey sidebar on white app */
+            background-color: #f7f7f7 !important;
             border-right: 1px solid #eee;
         }
         
-        /* GPS BUTONU BOŞLUK DÜZELTMESİ (Görünmez çerçevenin yüksekliğini daraltır) */
+        /* GPS BUTONU BOŞLUK DÜZELTMESİ */
         [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
             height: 45px !important;
             min-height: 45px !important;
@@ -84,7 +83,7 @@ st.markdown("""
             background: white;
             padding: 12px 20px;
             border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03); /* very light shadow */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
             border: 1px solid #eee;
             margin-bottom: 20px;
         }
@@ -99,11 +98,10 @@ st.markdown("""
             border: none !important;
             border-radius: 12px !important;
             padding: 10px 24px !important;
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2) !important; /* Lighter shadow on white */
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2) !important;
             transition: all 0.3s ease !important;
         }
         
-        /* TEXT INSIDE GREEN BUTTONS - Ensuring it's always white */
         div.stButton > button p, div.stButton > button span, 
         div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
             color: white !important;
@@ -115,16 +113,14 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3) !important;
         }
         
-        /* Special Account Delete Kırmızı Buton (Primary Kind) */
+        /* Hesap Silme Kırmızı Buton (Primary) */
         div.stButton > button[kind="primary"] {
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
             box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2) !important; 
         }
-        /* Ensure *content* of primary button is also white - explicit inner element targeting safer than global */
         div.stButton > button[kind="primary"] p, div.stButton > button[kind="primary"] span {
             color: white !important;
         }
-        
         div.stButton > button[kind="primary"]:hover {
             transform: translateY(-2px) !important;
             background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
@@ -193,7 +189,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v17").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v18").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -283,7 +279,6 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
-            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -324,29 +319,30 @@ with st.sidebar:
                     else: st.error("Hatalı giriş!")
         else:
             with st.form("s_f"):
-                n_a, n_u, n_p = st.text_input("Ad Soyad"), st.text_input("Kullanıcı Adı"), st.text_input("Şifre", type="password")
+                n_a = st.text_input("Ad Soyad")
+                n_u = st.text_input("Kullanıcı Adı")
+                n_p = st.text_input("Şifre", type="password")
                 
-                # --- YENİ: KULLANICI SÖZLEŞMESİ VE ONAY KUTUSU ---
+                # --- YENİ: KULLANICI SÖZLEŞMESİ ---
                 st.markdown("---")
                 with st.expander("📄 Kullanıcı Sözleşmesi"):
                     st.write("""
                     **GENEL KULLANIM ŞARTLARI VE SORUMLULUK REDDİ**
-                    1. Bu platform (Memur Emlak & Tayin Portalı) yalnızca tayinci memurlar arasında bilgi paylaşımı ve iletişim amacıyla kurulmuştur.
-                    2. Platformda yer alan emlak ilanlarının, fiyatların, adres ve açıklamaların doğruluğu tamamen ilanı ekleyen kullanıcının sorumluluğundadır.
-                    3. Platform yönetimi, kullanıcılar arasındaki anlaşmazlıklardan, asılsız ilanlardan veya oluşabilecek maddi/manevi zararlardan hiçbir şekilde sorumlu tutulamaz.
-                    4. Kullanıcılar, Türkiye Cumhuriyeti yasalarına uygun davranmayı, yanıltıcı, ahlaka aykırı veya zararlı içerik paylaşmamayı peşinen kabul eder.
-                    5. Üyelik bilgileriniz sistemin işleyişi için veritabanında güvenle saklanır ve üçüncü şahıslarla paylaşılmaz. Kayıt olarak bu şartları kabul etmiş sayılırsınız.
+                    1. Bu platform yalnızca tayinci memurlar arasında bilgi paylaşımı amacıyla kurulmuştur.
+                    2. İlanların ve bilgilerin doğruluğu tamamen ilanı ekleyen kullanıcının sorumluluğundadır.
+                    3. Yönetim, anlaşmazlıklardan veya oluşabilecek zararlardan sorumlu tutulamaz.
+                    4. Türkiye Cumhuriyeti yasalarına uygun davranmayı, zararlı içerik paylaşmamayı peşinen kabul edersiniz.
+                    5. Üyelik bilgileriniz sistemde güvenle saklanır.
                     """)
-                tos_agreed = st.checkbox("Sözleşmeyi okudum, tüm sorumlulukları kabul ediyorum.")
+                tos_agreed = st.checkbox("Sözleşmeyi okudum ve kabul ediyorum.")
                 
                 if st.form_submit_button("Kayıt Ol"):
                     if n_a and n_u and n_p:
                         if not tos_agreed:
-                            st.error("Kayıt olmak için Kullanıcı Sözleşmesini onaylamanız gerekmektedir.")
+                            st.error("Kayıt olmak için Kullanıcı Sözleşmesini onaylamalısınız.")
                         elif n_u in st.session_state.users: 
-                            st.error("Bu kullanıcı adı zaten alınmış.")
+                            st.error("Kullanıcı adı zaten alınmış.")
                         else:
-                            # Veritabanına sözleşme onayını da kaydediyoruz
                             u_data = {
                                 "sifre": n_p, 
                                 "rol": "kullanici", 
@@ -356,7 +352,7 @@ with st.sidebar:
                                 "tos_date": datetime.now().strftime("%d.%m.%Y %H:%M")
                             }
                             db.collection('users').document(n_u).set(u_data)
-                            st.success("Kayıt başarılı! Giriş yapabilirsiniz.")
+                            st.success("Kayıt başarılı! Lütfen giriş yapın.")
                     else:
                         st.error("Lütfen tüm alanları doldurun.")
     else:
@@ -364,7 +360,6 @@ with st.sidebar:
         
         with st.expander("⚙️ Hesap İşlemleri"):
             if st.session_state.user_role == "yonetici":
-                st.markdown("**Kullanıcı Şifresi Sıfırla**")
                 target = st.selectbox("Üye Seç:", list(st.session_state.users.keys()))
                 new_p_admin = st.text_input("Yeni Şifre", type="password", key="admin_pw_input")
                 if st.button("Şifreyi Güncelle", key="admin_pw_btn"):
@@ -373,7 +368,6 @@ with st.sidebar:
                         db.collection('users').document(target).update({"sifre": new_p_admin})
                         st.success("Güncellendi.")
             else:
-                st.markdown("**Şifre Değiştir**")
                 old_p, new_p = st.text_input("Eski Şifre", type="password"), st.text_input("Yeni Şifre", type="password")
                 if st.button("Şifremi Kaydet"):
                     if old_p == st.session_state.users[st.session_state.current_user]["sifre"] and new_p:
@@ -381,24 +375,24 @@ with st.sidebar:
                         db.collection('users').document(st.session_state.current_user).update({"sifre": new_p})
                         st.success("Güncellendi.")
                 
-                # --- YENİ: HESAP SİLME BÖLÜMÜ ---
+                # --- YENİ: HESAP SİLME (ÜYELİKTEN AYRILMA) ---
                 st.markdown("---")
                 st.markdown("**❌ Hesabımı Sil**")
-                st.warning("Dikkat: Hesabınızı sildiğinizde profiliniz ve onayladığınız sözleşmeler veritabanından kalıcı olarak yok edilir.")
+                st.warning("Dikkat: Hesabınızı sildiğinizde profiliniz, ilanlarınız ve sözleşme onaylarınız veritabanından kalıcı olarak yok edilir.")
                 del_confirm = st.checkbox("Ayrılmak istediğine emin misin?")
                 
                 if st.button("Üyelikten Ayrıl", type="primary"):
                     if del_confirm:
-                        # Veritabanından kullanıcıyı tamamen yok et
+                        # Firestore veritabanından kullanıcıyı sil
                         db.collection('users').document(st.session_state.current_user).delete()
-                        # Çıkış yap
+                        # Oturumu sonlandır
                         st.session_state.logged_in = False
                         st.session_state.current_user = None
                         st.session_state.user_role = None
-                        st.success("Hesabınız kalıcı olarak silinmiştir. Hoşça kalın!")
+                        st.success("Hesabınız başarıyla silindi. Hoşça kalın!")
                         st.rerun()
                     else:
-                        st.error("Lütfen işlemi onaylamak için kutucuğu işaretleyin.")
+                        st.error("Lütfen ayrılmak istediğinizi onaylamak için kutucuğu işaretleyin.")
 
         with st.expander("🔍 Detaylı Filtrele"):
             max_fiyat = st.slider("Maks. Bütçe", 0, 50000, 50000, step=500)
@@ -586,11 +580,10 @@ elif aktif_sekme == "📊 Admin":
         c2.metric("İlan", len(st.session_state.houses))
         c3.metric("Mesaj", len(st.session_state.messages))
         
-        # --- YENİ: YÖNETİCİ İÇİN KULLANICI SÖZLEŞMESİ ONAY TAKİP ALANI ---
+        # --- YENİ: YÖNETİCİ KULLANICI SÖZLEŞMESİ ONAY EKRANI ---
         st.markdown("---")
         st.subheader("📝 Kullanıcı Sözleşmesi Onay Listesi")
         for u_id, u_info in st.session_state.users.items():
             if u_info.get("rol") != "yonetici":
-                # Veritabanında onay varsa tarihini çek, yoksa uyar
                 onay_durumu = f"✅ Onaylandı ({u_info.get('tos_date', 'Tarih Yok')})" if u_info.get("tos_agreed") else "❌ Onay Yok"
                 st.write(f"Kullanıcı: **{u_id}** | Ad: {u_info.get('ad')} | Durum: {onay_durumu}")
