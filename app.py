@@ -19,40 +19,108 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# YENİ: MODERN CSS TASARIM BLOĞU
+# --- YENİ: MAT ŞEHİR MANZARASI VE KOYU METİN TASARIM BLOĞU ---
 st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
-        .main { background-color: #f8f9fa; }
-        div[role="radiogroup"] { flex-direction: row; gap: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         
-        /* Modern Buton ve Form Gönderim Butonu Tasarımları */
-        div.stButton > button, div.stFormSubmitButton > button {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
-            color: white !important;
-            border: none !important;
+        /* Ana Arka Plan Görseli (Şehir Manzarası) */
+        .stApp {
+            background-image: url("https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        /* Çok parlak olmayan, transparan ve mat cam katmanı (Okunabilirliği artırır) */
+        .stApp::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(230, 235, 240, 0.78); /* %78 Mat Gri/Beyaz Saydamlık */
+            backdrop-filter: blur(6px); /* Manzarayı çok bozmadan hafif bulanıklaştırır */
+            z-index: -1;
+        }
+
+        /* Tüm yazıları koyu antrasit yap (Butonlar hariç) */
+        p, h1, h2, h3, h4, h5, h6, span, label, li, div[data-testid="stMarkdownContainer"] {
+            color: #1a252f !important;
+        }
+
+        /* Fotoğraf Yükleme Alanı Düzeltmesi */
+        [data-testid="stFileUploadDropzone"] {
+            background-color: rgba(255, 255, 255, 0.90) !important;
+            border: 2px dashed #27ae60 !important;
             border-radius: 10px !important;
+        }
+        [data-testid="stFileUploadDropzone"] * {
+            color: #1a252f !important;
+        }
+
+        /* Metin Giriş Kutuları Düzeltmesi */
+        .stTextInput input, .stNumberInput input, .stTextArea textarea {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            color: #1a252f !important;
+            border: 1px solid #ccc !important;
+        }
+        
+        /* Selectbox (Açılır Kutu) Düzeltmesi */
+        [data-baseweb="select"] > div {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+        }
+        [data-baseweb="select"] * {
+            color: #1a252f !important;
+        }
+
+        /* Yan Menü (Sidebar) */
+        [data-testid="stSidebar"] {
+            background-color: rgba(255, 255, 255, 0.65) !important;
+            backdrop-filter: blur(15px) !important;
+            border-right: 1px solid rgba(255,255,255,0.5);
+        }
+
+        /* Sekme Menüsü (Radyo Butonları) */
+        div[role="radiogroup"] { 
+            flex-direction: row; 
+            gap: 15px; 
+            background: rgba(255, 255, 255, 0.90);
+            padding: 12px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.6);
+            margin-bottom: 20px;
+        }
+        div[role="radiogroup"] label {
+            font-weight: 800 !important;
+        }
+
+        /* Modern Butonlar (Yazıları zorla BEYAZ yapıldı ki yeşilde okunsun) */
+        div.stButton > button, div.stFormSubmitButton > button {
+            background: linear-gradient(135deg, #059669 0%, #27ae60 100%) !important;
+            border: none !important;
+            border-radius: 12px !important;
             padding: 10px 24px !important;
-            font-weight: 600 !important;
-            font-size: 15px !important;
-            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important; 
             transition: all 0.3s ease !important;
         }
-        
-        /* Butonun Üzerine Fare Gelince (Hover) */
+        div.stButton > button *, div.stFormSubmitButton > button * {
+            color: white !important;
+            font-weight: 700 !important; 
+            font-size: 16px !important; 
+        }
         div.stButton > button:hover, div.stFormSubmitButton > button:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
-            background: linear-gradient(135deg, #219653 0%, #27ae60 100%) !important;
-            color: white !important;
-            border: none !important;
+            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.45) !important;
         }
         
-        /* Butona Tıklanınca (Active) */
-        div.stButton > button:active, div.stFormSubmitButton > button:active {
-            transform: translateY(1px) !important;
-            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
-            border: none !important;
+        /* Formlar ve Expander Açılır Kutular */
+        div[data-testid="stForm"], div[data-testid="stExpander"] {
+            background-color: rgba(255, 255, 255, 0.85); 
+            border-radius: 15px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
     </style>
 """, unsafe_allow_html=True)
