@@ -19,11 +19,41 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
+# YENİ: MODERN CSS TASARIM BLOĞU
 st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         .main { background-color: #f8f9fa; }
         div[role="radiogroup"] { flex-direction: row; gap: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        
+        /* Modern Buton ve Form Gönderim Butonu Tasarımları */
+        div.stButton > button, div.stFormSubmitButton > button {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 10px !important;
+            padding: 10px 24px !important;
+            font-weight: 600 !important;
+            font-size: 15px !important;
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        /* Butonun Üzerine Fare Gelince (Hover) */
+        div.stButton > button:hover, div.stFormSubmitButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
+            background: linear-gradient(135deg, #219653 0%, #27ae60 100%) !important;
+            color: white !important;
+            border: none !important;
+        }
+        
+        /* Butona Tıklanınca (Active) */
+        div.stButton > button:active, div.stFormSubmitButton > button:active {
+            transform: translateY(1px) !important;
+            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
+            border: none !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -71,7 +101,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v13").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v14").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -161,7 +191,6 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
-            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -179,7 +208,7 @@ with st.sidebar:
         aktif_kurumlar = TUM_KURUMLAR
     elif secilen_sehir == "📍 Bulunduğum Konum":
         aktif_merkez = [user_location['latitude'], user_location['longitude']]
-        harita_zoom = 16 # En stabil ve detaylı yakınlaştırma seviyesi
+        harita_zoom = 16 
         aktif_kurumlar = [k for k in TUM_KURUMLAR if calculate_distance(aktif_merkez[0], aktif_merkez[1], k['lat'], k['lon']) <= 50]
     else:
         aktif_merkez = CITIES[secilen_sehir]["center"]
@@ -272,14 +301,12 @@ aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, hor
 st.session_state.tab_index = tab_names.index(aktif_sekme)
 
 if aktif_sekme == "📍 Harita":
-    # Düzenleme: Animasyon yapmayı zorlayan ancak çökmeye neden olan kodlar standart kullanıma geri döndürüldü
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
     if secilen_sehir != "Türkiye Geneli":
         for i in aktif_kurumlar: 
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
-    # Kullanıcının bulunduğu konumu belirten Kırmızı İkon
     if secilen_sehir == "📍 Bulunduğum Konum":
         folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="red", icon="user")).add_to(m)
     
