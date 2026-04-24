@@ -15,15 +15,15 @@ import io
 # --- 1. SAYFA AYARLARI VE MOBİL DESTEK (PWA) ---
 st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", page_icon="🏢")
 
-# Mobil uygulama olarak yüklenebilmesi için manifest desteği
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
 st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
-        .stTabs [data-baseweb="tab-list"] { gap: 8px; }
         .main { background-color: #f8f9fa; }
+        /* Yatay menüyü sekmelere benzetmek için ufak bir CSS */
+        div[role="radiogroup"] { flex-direction: row; gap: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -45,7 +45,6 @@ def load_data():
     if db is None: return
     st.session_state.users = {doc.id: doc.to_dict() for doc in db.collection('users').stream()}
     
-    # Yönetici Hesabı Kontrolü
     if "misivi46" not in st.session_state.users:
         admin_data = {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan", "favorites": []}
         db.collection('users').document("misivi46").set(admin_data)
@@ -72,7 +71,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v5").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v6").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -82,22 +81,49 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# GENİŞLETİLMİŞ KURUM LİSTESİ
-institutions = [
-    {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
-    {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
-    {"name": "Adliye", "lat": 38.6705, "lon": 39.2215},
-    {"name": "Fırat Üniversitesi (Kampüs)", "lat": 38.6756, "lon": 39.1970},
-    {"name": "Elazığ Belediyesi", "lat": 38.6782, "lon": 39.2248},
-    {"name": "İl Emniyet Müdürlüğü", "lat": 38.6710, "lon": 39.1840},
-    {"name": "İl Milli Eğitim Müdürlüğü", "lat": 38.6795, "lon": 39.2220},
-    {"name": "8. Kolordu Komutanlığı", "lat": 38.6665, "lon": 39.2130},
-    {"name": "Elazığ Havalimanı", "lat": 38.6052, "lon": 39.2905}
-]
+# YENİ: ŞEHİR VE KURUM VERİTABANI
+CITIES = {
+    "Elazığ": {
+        "center": [38.6748, 39.2225],
+        "institutions": [
+            {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
+            {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
+            {"name": "Adliye", "lat": 38.6705, "lon": 39.2215},
+            {"name": "Fırat Üniversitesi", "lat": 38.6756, "lon": 39.1970},
+            {"name": "İl Emniyet Müdürlüğü", "lat": 38.6710, "lon": 39.1840}
+        ]
+    },
+    "Konya": {
+        "center": [37.8746, 32.4931],
+        "institutions": [
+            {"name": "Konya Valiliği", "lat": 37.8715, "lon": 32.4846},
+            {"name": "Şehir Hastanesi", "lat": 37.8580, "lon": 32.5350},
+            {"name": "Konya Adliyesi", "lat": 37.8785, "lon": 32.5280},
+            {"name": "Selçuk Üniversitesi", "lat": 38.0260, "lon": 32.5125},
+            {"name": "İl Emniyet Müdürlüğü", "lat": 37.8860, "lon": 32.4900}
+        ]
+    },
+    "Ankara": {
+        "center": [39.9334, 32.8597],
+        "institutions": [
+            {"name": "Ankara Valiliği", "lat": 39.9410, "lon": 32.8545},
+            {"name": "Bilkent Şehir Hastanesi", "lat": 39.8955, "lon": 32.7620},
+            {"name": "Ankara Adliyesi", "lat": 39.9300, "lon": 32.8500},
+            {"name": "ODTÜ", "lat": 39.8914, "lon": 32.7846},
+            {"name": "Emniyet Genel Müd.", "lat": 39.9145, "lon": 32.8505}
+        ]
+    }
+}
 
-# --- 5. SIDEBAR (AUTH, FİLTRE & ŞİFRE) ---
+# --- 5. SIDEBAR (AUTH, ŞEHİR & FİLTRE) ---
 with st.sidebar:
     st.title("🏡 İşlemler")
+    
+    # YENİ: ŞEHİR SEÇİMİ
+    secilen_sehir = st.selectbox("🏙️ Şehir Seçin:", list(CITIES.keys()))
+    aktif_merkez = CITIES[secilen_sehir]["center"]
+    aktif_kurumlar = CITIES[secilen_sehir]["institutions"]
+
     max_fiyat, kurum_sec, max_mesafe = 50000, "Farketmez", 50.0
     oda_sec, esya_sec = "Farketmez", "Farketmez"
 
@@ -125,35 +151,28 @@ with st.sidebar:
     else:
         st.success(f"Hoş geldin, {st.session_state.users[st.session_state.current_user]['ad']}")
         
-        # KALICI ŞİFRE GÜNCELLEME SİSTEMİ (İSTEDİĞİN EKLEME BURADA)
         with st.expander("⚙️ Şifre İşlemleri"):
             if st.session_state.user_role == "yonetici":
-                st.markdown("**Kullanıcı Şifresi Sıfırla**")
                 target = st.selectbox("Üye Seç:", list(st.session_state.users.keys()))
-                new_p_admin = st.text_input("Yeni Şifre Belirle", type="password", key="admin_pw_input")
+                new_p_admin = st.text_input("Yeni Şifre", type="password", key="admin_pw_input")
                 if st.button("Şifreyi Güncelle", key="admin_pw_btn"):
                     if new_p_admin:
                         st.session_state.users[target]["sifre"] = new_p_admin
                         db.collection('users').document(target).update({"sifre": new_p_admin})
-                        st.success(f"✅ {target} şifresi veritabanında güncellendi.")
+                        st.success(f"Güncellendi.")
             else:
-                st.markdown("**Kendi Şifreni Değiştir**")
-                old_p = st.text_input("Mevcut Şifre", type="password")
-                new_p = st.text_input("Yeni Şifre", type="password")
+                old_p, new_p = st.text_input("Eski Şifre", type="password"), st.text_input("Yeni Şifre", type="password")
                 if st.button("Şifremi Kaydet"):
-                    if old_p == st.session_state.users[st.session_state.current_user]["sifre"]:
-                        if new_p:
-                            st.session_state.users[st.session_state.current_user]["sifre"] = new_p
-                            db.collection('users').document(st.session_state.current_user).update({"sifre": new_p})
-                            st.success("✅ Şifreniz kalıcı olarak güncellendi.")
-                        else: st.error("Yeni şifre boş olamaz.")
-                    else: st.error("❌ Mevcut şifre hatalı.")
+                    if old_p == st.session_state.users[st.session_state.current_user]["sifre"] and new_p:
+                        st.session_state.users[st.session_state.current_user]["sifre"] = new_p
+                        db.collection('users').document(st.session_state.current_user).update({"sifre": new_p})
+                        st.success("Güncellendi.")
 
         with st.expander("🔍 Detaylı Filtrele"):
             max_fiyat = st.slider("Maks. Bütçe", 0, 50000, 50000, step=500)
             oda_sec = st.selectbox("Oda", ["Farketmez", "1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             esya_sec = st.radio("Eşya", ["Farketmez", "Eşyalı", "Boş"])
-            kurum_sec = st.selectbox("Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in institutions])
+            kurum_sec = st.selectbox("Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in aktif_kurumlar])
             if kurum_sec != "Farketmez": max_mesafe = st.slider("Mesafe (km)", 0.5, 30.0, 5.0)
 
         if st.button("🚪 Çıkış Yap"):
@@ -161,30 +180,38 @@ with st.sidebar:
             st.rerun()
 
 # --- FİLTRELEME MANTIĞI ---
-f_houses = [h for h in st.session_state.houses if h["price"] <= max_fiyat]
+# 1. Aşama: Sadece seçilen şehre 100 km yakınlıktaki evleri al (Diğer şehirleri gizle)
+f_houses = [h for h in st.session_state.houses if calculate_distance(h["lat"], h["lon"], aktif_merkez[0], aktif_merkez[1]) <= 100]
+
+# 2. Aşama: Kullanıcı filtrelerini uygula
+f_houses = [h for h in f_houses if h["price"] <= max_fiyat]
 if oda_sec != "Farketmez": f_houses = [h for h in f_houses if h.get("rooms", "Belirtilmemiş") == oda_sec]
 if esya_sec != "Farketmez":
     esya_bool = True if esya_sec == "Eşyalı" else False
     f_houses = [h for h in f_houses if h.get("furnished", False) == esya_bool]
 if kurum_sec != "Farketmez":
-    inst = next(i for i in institutions if i["name"] == kurum_sec)
+    inst = next(i for i in aktif_kurumlar if i["name"] == kurum_sec)
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
-# --- 6. ANA PANEL VE SEKMELER ---
+# --- 6. ANA PANEL (YÖNLENDİREBİLİR YATAY MENÜ) ---
 tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 if st.session_state.user_role == "yonetici": tab_names.append("📊 Admin")
 
-tabs = st.tabs(tab_names)
-t1, t2, t3, t4, t5 = tabs[0], tabs[1], tabs[2], tabs[3], tabs[4]
+# Otomatik yönlendirme için aktif sekmeyi session_state'de tutuyoruz
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = tab_names[0]
 
-with t1:
-    m = folium.Map(location=[38.6748, 39.2225], zoom_start=13, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
-    for i in institutions: folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
+# Sekme görünümünde radyo butonları
+aktif_sekme = st.radio("Menü", tab_names, horizontal=True, label_visibility="collapsed", key="active_tab")
+
+if aktif_sekme == "📍 Harita":
+    m = folium.Map(location=aktif_merkez, zoom_start=13, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
+    for i in aktif_kurumlar: folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
-            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in institutions])
+            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in aktif_kurumlar])
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
@@ -203,25 +230,38 @@ with t1:
             </div>"""
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
+    
     m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
+    
+    # YENİ: TIKLAMA YAKALAYICI VE YÖNLENDİRİCİ
+    if m_res and m_res.get("last_clicked"):
+        click_data = m_res["last_clicked"]
+        if st.session_state.get("prev_click") != click_data:
+            st.session_state.prev_click = click_data
+            st.session_state.active_tab = "🏠 İlan Ekle" # Otomatik Sekme Değiştir
+            st.rerun()
 
-with t2:
+elif aktif_sekme == "🏠 İlan Ekle":
     if not st.session_state.logged_in: st.warning("Giriş yapınız.")
     else:
-        l_n, o_n, a_n = 38.6748, 39.2225, ""
-        if m_res and m_res.get("last_clicked"):
-            l_n, o_n = m_res["last_clicked"]["lat"], m_res["last_clicked"]["lng"]
+        # Varsayılan olarak şehrin merkezini al, haritaya tıklandıysa tıklanan yeri al
+        l_n, o_n, a_n = aktif_merkez[0], aktif_merkez[1], ""
+        if st.session_state.get("prev_click"):
+            l_n, o_n = st.session_state.prev_click["lat"], st.session_state.prev_click["lng"]
             a_n = koordinati_adrese_cevir(l_n, o_n)
+            st.success(f"📍 Haritadan Konum Seçildi: {a_n}")
             
         with st.form("add_f"):
-            ti, pr = st.text_input("Başlık"), st.number_input("Kira (TL)", min_value=0, step=500)
+            ti, pr = st.text_input("Başlık (*Zorunlu*)"), st.number_input("Kira (TL) (*Zorunlu*)", min_value=0, step=500)
             c1, c2 = st.columns(2)
             rm = c1.selectbox("Oda Sayısı", ["1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             fr = c2.checkbox("Eşyalı")
-            ad, co = st.text_area("Adres", value=a_n), st.text_area("Açıklama")
+            ad, co = st.text_area("Adres (*Zorunlu*)", value=a_n), st.text_area("Açıklama")
             fl = st.file_uploader("Fotoğraf", type=["jpg", "png"])
             if st.form_submit_button("İlanı Yayınla"):
-                if icerik_uygun_mu(ti) and icerik_uygun_mu(co) and ti and pr > 0:
+                if not icerik_uygun_mu(ti) or not icerik_uygun_mu(co): st.error("Kurallara aykırı kelime!")
+                elif not ti or not ad or pr <= 0: st.error("Zorunlu alanları doldurun.")
+                else:
                     b64 = ""
                     if fl:
                         img = Image.open(fl).convert("RGB")
@@ -233,44 +273,63 @@ with t2:
                     h_data = {"id": h_id, "title": ti, "price": pr, "rooms": rm, "furnished": fr, "address": ad, "comment": co, "lat": l_n, "lon": o_n, "image": b64, "owner": st.session_state.current_user}
                     db.collection('houses').document(h_id).set(h_data)
                     st.session_state.houses.append(h_data)
+                    st.session_state.prev_click = None # Sıfırla
                     st.success("İlan kaydedildi!")
+                    st.session_state.active_tab = "📋 Tüm İlanlar" # Başarılıysa listeye at
                     st.rerun()
 
-with t3:
+elif aktif_sekme == "📋 Tüm İlanlar":
     if not st.session_state.logged_in: st.warning("Giriş yapın.")
     else:
+        st.info(f"📍 Şu an sadece **{secilen_sehir}** çevresindeki ilanlar listeleniyor.")
         for h in f_houses:
-            with st.expander(f"🏠 {h['title']} - {h['price']} TL"):
+            esya_durumu = "Eşyalı" if h.get("furnished", False) else "Boş"
+            oda_durumu = h.get("rooms", "Belirtilmemiş")
+            with st.expander(f"🏠 {h['title']} - {h['price']} TL | {oda_durumu} - {esya_durumu}"):
                 col1, col2 = st.columns([1, 2])
                 if h.get("image"): col1.image(f"data:image/jpeg;base64,{h['image']}")
                 col2.write(f"**Adres:** {h['address']}\n\n**Açıklama:** {h['comment']}")
+                
                 f_l = st.session_state.users[st.session_state.current_user].get("favorites", [])
-                if st.button("❤️" if h["id"] in f_l else "🤍", key=f"f_{h['id']}"):
-                    if h["id"] in f_l: f_l.remove(h["id"])
-                    else: f_l.append(h["id"])
-                    db.collection('users').document(st.session_state.current_user).update({"favorites": f_l})
-                    st.rerun()
-                if st.session_state.user_role == "yonetici" or h["owner"] == st.session_state.current_user:
-                    if st.button("🗑️ Sil", key=f"s_{h['id']}"):
-                        db.collection('houses').document(h["id"]).delete()
+                b1, b2, b3 = st.columns([1,1,2])
+                with b1:
+                    if st.button("❤️ Çıkar" if h["id"] in f_l else "🤍 Favorile", key=f"f_{h['id']}"):
+                        if h["id"] in f_l: f_l.remove(h["id"])
+                        else: f_l.append(h["id"])
+                        db.collection('users').document(st.session_state.current_user).update({"favorites": f_l})
                         st.rerun()
+                with b2:
+                    if st.session_state.user_role == "yonetici" or h["owner"] == st.session_state.current_user:
+                        if st.button("🗑️ Sil", key=f"s_{h['id']}"):
+                            db.collection('houses').document(h["id"]).delete()
+                            st.session_state.houses = [x for x in st.session_state.houses if x["id"] != h["id"]]
+                            st.rerun()
+                if h["owner"] != st.session_state.current_user:
+                    st.markdown("---")
+                    m_i = st.text_input("Mesajınız", key=f"m_{h['id']}")
+                    if st.button("Gönder", key=f"b_{h['id']}"):
+                        if m_i and icerik_uygun_mu(m_i):
+                            msg = {"house": h["title"], "from": st.session_state.current_user, "to": h["owner"], "text": m_i, "date": datetime.now().strftime("%d.%m %H:%M")}
+                            db.collection('messages').add(msg)
+                            st.session_state.messages.append(msg)
+                            st.success("İletildi.")
 
-with t4:
+elif aktif_sekme == "⭐ Favoriler":
     if st.session_state.logged_in:
         f_l = st.session_state.users[st.session_state.current_user].get("favorites", [])
         for h in [x for x in st.session_state.houses if x["id"] in f_l]: 
             st.write(f"⭐ **{h['title']}** - {h['price']} TL")
 
-with t5:
+elif aktif_sekme == "📩 Mesajlar":
     if st.session_state.logged_in:
         my_m = [m for m in st.session_state.messages if m["from"] == st.session_state.current_user or m["to"] == st.session_state.current_user or st.session_state.user_role == "yonetici"]
         for m in my_m:
             with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
                 st.write(f"**{m['house']}** | {m['from']} ➔ {m['to']}\n{m['text']}")
 
-if st.session_state.user_role == "yonetici" and len(tabs) == 6:
-    with tabs[5]:
-        st.header("📊 Admin")
+elif aktif_sekme == "📊 Admin":
+    if st.session_state.user_role == "yonetici":
+        st.header("📊 Admin İstatistikleri")
         c1, c2, c3 = st.columns(3)
         c1.metric("Kullanıcı", len(st.session_state.users))
         c2.metric("İlan", len(st.session_state.houses))
