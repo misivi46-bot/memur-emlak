@@ -19,120 +19,40 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- YENİ: KUSURSUZ TASARIM VE GPS BOŞLUK DÜZELTİCİ CSS ---
+# YENİ: MODERN CSS TASARIM BLOĞU
 st.markdown("""
     <style>
-        /* Ana harita çerçevesi */
-        .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
+        iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
+        .main { background-color: #f8f9fa; }
+        div[role="radiogroup"] { flex-direction: row; gap: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         
-        /* Ana Arka Plan Görseli (Şehir Manzarası) */
-        .stApp {
-            background-image: url("https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-        
-        /* Çok parlak olmayan, transparan mat cam katmanı */
-        .stApp::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(230, 235, 240, 0.78);
-            backdrop-filter: blur(6px);
-            z-index: -1;
-        }
-
-        /* YAZI RENGİ DÜZELTMESİ (Sağ üst menüyü bozmaması için sadece main ve sidebar hedeflendi) */
-        .main p, .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main span, .main label, .main li, .main div[data-testid="stMarkdownContainer"],
-        [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label, [data-testid="stSidebar"] li {
-            color: #1a252f !important;
-        }
-
-        /* YENİ: GPS BUTONU BOŞLUK DÜZELTMESİ (Görünmez çerçevenin yüksekliğini daraltır) */
-        [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
-            height: 45px !important;
-            min-height: 45px !important;
-            max-height: 45px !important;
-            margin-bottom: 0px !important;
-            overflow: hidden !important;
-        }
-        [data-testid="stSidebar"] iframe {
-            height: 45px !important;
-            min-height: 45px !important;
-            max-height: 45px !important;
-        }
-
-        /* Fotoğraf Yükleme Alanı */
-        [data-testid="stFileUploadDropzone"] {
-            background-color: rgba(255, 255, 255, 0.90) !important;
-            border: 2px dashed #27ae60 !important;
-            border-radius: 10px !important;
-        }
-
-        /* Metin Giriş Kutuları */
-        .stTextInput input, .stNumberInput input, .stTextArea textarea {
-            background-color: rgba(255, 255, 255, 0.95) !important;
-            color: #1a252f !important;
-            border: 1px solid #ccc !important;
-        }
-        
-        /* Selectbox (Açılır Kutu) */
-        [data-baseweb="select"] > div {
-            background-color: rgba(255, 255, 255, 0.95) !important;
-        }
-
-        /* Yan Menü (Sidebar) */
-        [data-testid="stSidebar"] {
-            background-color: rgba(255, 255, 255, 0.65) !important;
-            backdrop-filter: blur(15px) !important;
-            border-right: 1px solid rgba(255,255,255,0.5);
-        }
-
-        /* Sekme Menüsü (Radyo Butonları) */
-        div[role="radiogroup"] { 
-            flex-direction: row; 
-            gap: 15px; 
-            background: rgba(255, 255, 255, 0.90);
-            padding: 12px 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 1px solid rgba(255,255,255,0.6);
-            margin-bottom: 20px;
-        }
-        div[role="radiogroup"] label, div[role="radiogroup"] p {
-            color: #1a252f !important;
-            font-weight: 800 !important;
-        }
-
-        /* Modern Butonlar (Yeşil zemin, Beyaz yazı) */
+        /* Modern Buton ve Form Gönderim Butonu Tasarımları */
         div.stButton > button, div.stFormSubmitButton > button {
-            background: linear-gradient(135deg, #059669 0%, #27ae60 100%) !important;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+            color: white !important;
             border: none !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
             padding: 10px 24px !important;
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important; 
+            font-weight: 600 !important;
+            font-size: 15px !important;
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
             transition: all 0.3s ease !important;
         }
-        div.stButton > button p, div.stButton > button span, 
-        div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
-            color: white !important;
-            font-weight: 700 !important; 
-            font-size: 16px !important; 
-        }
+        
+        /* Butonun Üzerine Fare Gelince (Hover) */
         div.stButton > button:hover, div.stFormSubmitButton > button:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.45) !important;
+            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
+            background: linear-gradient(135deg, #219653 0%, #27ae60 100%) !important;
+            color: white !important;
+            border: none !important;
         }
         
-        /* Formlar ve Expander Açılır Kutular */
-        div[data-testid="stForm"], div[data-testid="stExpander"] {
-            background-color: rgba(255, 255, 255, 0.85); 
-            border-radius: 15px;
-            padding: 15px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        /* Butona Tıklanınca (Active) */
+        div.stButton > button:active, div.stFormSubmitButton > button:active {
+            transform: translateY(1px) !important;
+            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
+            border: none !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -181,7 +101,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v16").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v14").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -271,7 +191,6 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
-            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -389,42 +308,34 @@ if aktif_sekme == "📍 Harita":
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
     if secilen_sehir == "📍 Bulunduğum Konum":
-        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="cadetblue", icon="crosshairs", prefix="fa")).add_to(m)
+        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="red", icon="user")).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
             yakindaki_kurumlar = sorted(TUM_KURUMLAR, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
-            dist_items = "".join([f"<li style='color:#1a252f; margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
+            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
             
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
             
             popup_html = f"""
-            <div style='width:240px; font-family: sans-serif; color:#1a252f;'>
+            <div style='width:240px; font-family: sans-serif;'>
                 {img_tag}
                 <b style='font-size:14px;'>{h['title']}</b><br>
                 <span style='color:#27ae60; font-size:16px; font-weight:bold;'>{h['price']} TL</span><br>
-                <hr style='margin:8px 0; border-color:#ccc;'>
-                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:linear-gradient(135deg, #059669 0%, #27ae60 100%); color:white; text-decoration:none; padding:8px; border-radius:8px; font-size:12px; font-weight:bold;">📍 Yol Tarifi Al</a>
-                <p style='font-size:11px; margin:8px 0 4px 0; color:#1a252f;'><b>En Yakın Kurumlar:</b></p>
-                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 4px; background-color: #fdfdfd;'>
+                <hr style='margin:8px 0;'>
+                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px;">📍 Yol Tarifi Al</a>
+                <p style='font-size:11px; margin:8px 0 4px 0;'><b>En Yakın Kurumlar:</b></p>
+                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background-color: #fcfcfc;'>
                     <ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>
                 </div>
             </div>"""
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
     
-    m_res = st_folium(
-        m, 
-        center=aktif_merkez, 
-        zoom=harita_zoom, 
-        key="ana_harita", 
-        use_container_width=True, 
-        height=550, 
-        returned_objects=["last_clicked"]
-    )
+    m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
     
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
@@ -448,7 +359,7 @@ elif aktif_sekme == "🏠 İlan Ekle":
             rm = c1.selectbox("Oda Sayısı", ["1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             fr = c2.checkbox("Eşyalı")
             ad, co = st.text_area("Adres (*Zorunlu*)", value=a_n), st.text_area("Açıklama")
-            fl = st.file_uploader("Fotoğraf Yükle", type=["jpg", "png"])
+            fl = st.file_uploader("Fotoğraf", type=["jpg", "png"])
             if st.form_submit_button("İlanı Yayınla"):
                 if not icerik_uygun_mu(ti) or not icerik_uygun_mu(co): st.error("Kurallara aykırı kelime!")
                 elif not ti or not ad or pr <= 0: st.error("Zorunlu alanları doldurun.")
