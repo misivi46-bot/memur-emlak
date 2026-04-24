@@ -11,6 +11,8 @@ from google.oauth2 import service_account
 from google.cloud import firestore
 from PIL import Image
 import io
+# YENİ: GPS Konum Bulma Kütüphanesi
+from streamlit_geolocation import streamlit_geolocation
 
 # --- 1. SAYFA AYARLARI VE MOBİL DESTEK (PWA) ---
 st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", page_icon="🏢")
@@ -70,7 +72,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_final").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v8").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -80,7 +82,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRASINA GÖRE) ---
+# --- 5. ŞEHİR BİLGİLERİ ---
 PLAKA_SIRALI_ILLER = [
     "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
     "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
@@ -135,7 +137,6 @@ for sehir in PLAKA_SIRALI_ILLER:
         ]
     }
 
-# Özel Kurum Eklentileri
 CITIES["Elazığ"]["institutions"].extend([
     {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
     {"name": "Fırat Üniversitesi", "lat": 38.6756, "lon": 39.1970}
@@ -143,21 +144,35 @@ CITIES["Elazığ"]["institutions"].extend([
 CITIES["Ankara"]["institutions"].append({"name": "ODTÜ", "lat": 39.8914, "lon": 32.7846})
 CITIES["Konya"]["institutions"].append({"name": "Selçuk Üniversitesi", "lat": 38.0260, "lon": 32.5125})
 
+# Tüm Türkiye Kurumlarını Birleştirme Fonksiyonu
+TUM_KURUMLAR = [kurum for il_veri in CITIES.values() for kurum in il_veri["institutions"]]
 
-# --- 6. SIDEBAR (AUTH, ŞEHİR & FİLTRE) ---
+# --- 6. SIDEBAR (AUTH, GPS & FİLTRE) ---
 with st.sidebar:
     st.title("🏡 İşlemler")
     
-    # YENİ: Türkiye Geneli seçeneği ve Plaka Sıralaması
+    # YENİ: GPS KONUM BULMA MODÜLÜ
+    st.markdown("📍 **Mevcut Konumunuz**")
+    user_location = streamlit_geolocation()
+    
     sehir_secenekleri = ["Türkiye Geneli"] + PLAKA_SIRALI_ILLER
+    
+    # Eğer kullanıcı konum izni verdiyse, listeye "Bulunduğum Konum" eklensin
+    if user_location and user_location.get('latitude') is not None:
+        sehir_secenekleri.insert(1, "📍 Bulunduğum Konum")
+    
     secilen_sehir = st.selectbox("🏙️ Konum Seçin:", sehir_secenekleri, index=0)
 
-    # Seçime göre harita ayarları
+    # Seçime göre harita ayarları ve kurum listesi
     if secilen_sehir == "Türkiye Geneli":
-        aktif_merkez = [39.0, 35.0] # Türkiye'nin ortası
+        aktif_merkez = [39.0, 35.0]
         harita_zoom = 6
-        # Tüm Türkiye'deki kurumları birleştir (haritada göstermek için)
-        aktif_kurumlar = [kurum for il_veri in CITIES.values() for kurum in il_veri["institutions"]]
+        aktif_kurumlar = TUM_KURUMLAR
+    elif secilen_sehir == "📍 Bulunduğum Konum":
+        aktif_merkez = [user_location['latitude'], user_location['longitude']]
+        harita_zoom = 14
+        # GPS konumuna 50km çapındaki kurumları getir
+        aktif_kurumlar = [k for k in TUM_KURUMLAR if calculate_distance(aktif_merkez[0], aktif_merkez[1], k['lat'], k['lon']) <= 50]
     else:
         aktif_merkez = CITIES[secilen_sehir]["center"]
         harita_zoom = 12
@@ -200,7 +215,7 @@ with st.sidebar:
                         db.collection('users').document(target).update({"sifre": new_p_admin})
                         st.success("Güncellendi.")
             else:
-                old_p, new_p = text_input("Eski Şifre", type="password"), st.text_input("Yeni Şifre", type="password")
+                old_p, new_p = st.text_input("Eski Şifre", type="password"), st.text_input("Yeni Şifre", type="password")
                 if st.button("Şifremi Kaydet"):
                     if old_p == st.session_state.users[st.session_state.current_user]["sifre"] and new_p:
                         st.session_state.users[st.session_state.current_user]["sifre"] = new_p
@@ -212,12 +227,11 @@ with st.sidebar:
             oda_sec = st.selectbox("Oda", ["Farketmez", "1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             esya_sec = st.radio("Eşya", ["Farketmez", "Eşyalı", "Boş"])
             
-            # Türkiye Geneli seçiliyse yüzlerce kurumu filtreye dizmek sistemi yorar, o yüzden gizliyoruz
             if secilen_sehir != "Türkiye Geneli":
                 kurum_sec = st.selectbox("Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in aktif_kurumlar])
                 if kurum_sec != "Farketmez": max_mesafe = st.slider("Mesafe (km)", 0.5, 30.0, 5.0)
             else:
-                st.info("💡 Kuruma yakınlık filtresi kullanmak için yukarıdan spesifik bir il seçiniz.")
+                st.info("💡 Kurum filtresi için yukarıdan spesifik bir il seçin.")
                 kurum_sec = "Farketmez"
 
         if st.button("🚪 Çıkış Yap"):
@@ -226,9 +240,8 @@ with st.sidebar:
 
 # --- FİLTRELEME MANTIĞI ---
 if secilen_sehir == "Türkiye Geneli":
-    f_houses = st.session_state.houses # Tüm evleri göster
+    f_houses = st.session_state.houses
 else:
-    # Sadece seçilen şehre 100 km yakınlıktaki evleri göster
     f_houses = [h for h in st.session_state.houses if calculate_distance(h["lat"], h["lon"], aktif_merkez[0], aktif_merkez[1]) <= 100]
 
 f_houses = [h for h in f_houses if h["price"] <= max_fiyat]
@@ -253,16 +266,16 @@ st.session_state.tab_index = tab_names.index(aktif_sekme)
 if aktif_sekme == "📍 Harita":
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
-    # Tüm kurumları haritaya bas
-    for i in aktif_kurumlar: 
-        folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
+    # Türkiye genelindeyken sistemi yormamak için sadece aktif şehir veya GPS etrafındaki kurumları bas
+    if secilen_sehir != "Türkiye Geneli":
+        for i in aktif_kurumlar: 
+            folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
-            # Akıllı Mesafe Hesaplayıcı: Eve en yakın 5 kurumu bulup listeler
-            # (Eğer Türkiye Genelindeyse yüzlerce kurumu listelememesi için)
-            yakindaki_kurumlar = sorted(aktif_kurumlar, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
+            # Sadece o eve en yakın 5 kurumu bul (Türkiye genelinde yüzlerce kurumu listelememek için)
+            yakindaki_kurumlar = sorted(TUM_KURUMLAR, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
             dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
             
             img_b64 = h.get("image", "")
