@@ -20,50 +20,13 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- MODERN CSS TASARIM BLOĞU (Solid Beyaz Zemin) ---
+# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tüm Renk ve Tema Ayarları Temizlendi) ---
 st.markdown("""
     <style>
-        iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
+        /* Harita Çerçevesi Düzeltmesi */
+        .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
-        /* Solid Light Background */
-        .stApp {
-            background-color: white !important;
-        }
-        
-        /* All text in main and sidebar, excluding button content */
-        .main p, .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main span, .main label, .main li, .main div[data-testid="stMarkdownContainer"],
-        [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label, [data-testid="stSidebar"] li {
-            color: #1a252f !important;
-        }
-
-        /* Photo Upload Dropzone */
-        [data-testid="stFileUploadDropzone"] {
-            background-color: #fdfdfd !important;
-            border: 2px dashed #27ae60 !important;
-            border-radius: 10px !important;
-        }
-        [data-testid="stFileUploadDropzone"] * { color: #1a252f !important; }
-
-        /* Metin Giriş Kutuları */
-        .stTextInput input, .stNumberInput input, .stTextArea textarea {
-            background-color: white !important;
-            color: #1a252f !important;
-            border: 1px solid #ccc !important;
-        }
-        
-        /* Selectbox (Açılır Kutu) */
-        [data-baseweb="select"] > div {
-            background-color: white !important;
-        }
-        [data-baseweb="select"] * { color: #1a252f !important; }
-
-        /* Yan Menü (Sidebar) */
-        [data-testid="stSidebar"] {
-            background-color: #f7f7f7 !important;
-            border-right: 1px solid #eee;
-        }
-        
-        /* GPS BUTONU BOŞLUK DÜZELTMESİ */
+        /* GPS Butonu Devasa Boşluk Düzeltmesi */
         [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
             height: 45px !important;
             min-height: 45px !important;
@@ -75,66 +38,6 @@ st.markdown("""
             height: 45px !important;
             min-height: 45px !important;
             max-height: 45px !important;
-        }
-
-        /* Sekme Menüsü (Radyo Butonları) */
-        div[role="radiogroup"] { 
-            flex-direction: row; 
-            gap: 15px; 
-            background: white;
-            padding: 12px 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid #eee;
-            margin-bottom: 20px;
-        }
-        div[role="radiogroup"] label, div[role="radiogroup"] p {
-            color: #1a252f !important;
-            font-weight: 800 !important;
-        }
-
-        /* Standart Yeşil Butonlar */
-        div.stButton > button, div.stFormSubmitButton > button {
-            background: linear-gradient(135deg, #059669 0%, #27ae60 100%) !important;
-            border: none !important;
-            border-radius: 12px !important;
-            padding: 10px 24px !important;
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2) !important;
-            transition: all 0.3s ease !important;
-        }
-        
-        div.stButton > button p, div.stButton > button span, 
-        div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
-            color: white !important;
-            font-weight: 700 !important; 
-            font-size: 16px !important; 
-        }
-        div.stButton > button:hover:not([kind="primary"]), div.stFormSubmitButton > button:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3) !important;
-        }
-        
-        /* Hesap Silme Kırmızı Buton (Primary) */
-        div.stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2) !important; 
-        }
-        div.stButton > button[kind="primary"] p, div.stButton > button[kind="primary"] span {
-            color: white !important;
-        }
-        div.stButton > button[kind="primary"]:hover {
-            transform: translateY(-2px) !important;
-            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
-            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.35) !important;
-        }
-        
-        /* Formlar ve Expander Açılır Kutular */
-        div[data-testid="stForm"], div[data-testid="stExpander"] {
-            background-color: white !important; 
-            border-radius: 15px;
-            padding: 15px;
-            border: 1px solid #eee !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -157,7 +60,7 @@ def load_data():
     if db is None: return
     st.session_state.users = {doc.id: doc.to_dict() for doc in db.collection('users').stream()}
     
-    # Yönetici hesabı (Şifre geçmişi kaldırıldı)
+    # Yönetici hesabı (Gelişmiş bilgilerle)
     if "misivi46" not in st.session_state.users:
         admin_data = {
             "sifre": "Elvinmelek46**", 
@@ -194,7 +97,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v24").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v25").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -284,6 +187,7 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
+            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -312,71 +216,10 @@ with st.sidebar:
     oda_sec, esya_sec = "Farketmez", "Farketmez"
 
     if not st.session_state.logged_in:
-        auth = st.radio("Hesap İşlemleri:", ["Giriş Yap", "Üye Ol", "Şifremi Unuttum"], horizontal=True)
-        
-        if auth == "Giriş Yap":
-            with st.form("l_f"):
-                u, p = st.text_input("Kullanıcı Adı"), st.text_input("Şifre", type="password")
-                if st.form_submit_button("Giriş Yap"):
-                    load_data()
-                    if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
-                        st.session_state.logged_in, st.session_state.current_user, st.session_state.user_role = True, u, st.session_state.users[u]["rol"]
-                        st.rerun()
-                    else: st.error("Hatalı kullanıcı adı veya şifre!")
-        
-        elif auth == "Üye Ol":
-            with st.form("s_f"):
-                st.markdown("**Zorunlu Bilgiler**")
-                n_a = st.text_input("Ad Soyad")
-                n_u = st.text_input("Kullanıcı Adı")
-                n_e = st.text_input("E-Posta Adresi")
-                n_p = st.text_input("Şifre", type="password")
-                
-                st.markdown("**İsteğe Bağlı Bilgiler**")
-                c1, c2, c3 = st.columns(3)
-                n_gun = c1.selectbox("Gün", [""] + list(range(1, 32)))
-                n_ay = c2.selectbox("Ay", ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"])
-                n_yil = c3.selectbox("Yıl", [""] + list(range(1950, 2010)))
-                n_meslek = st.text_input("Meslek")
-                
-                st.markdown("---")
-                with st.expander("📄 Kullanıcı Sözleşmesi"):
-                    st.write("""
-                    **GENEL KULLANIM ŞARTLARI VE SORUMLULUK REDDİ**
-                    1. Bu platform yalnızca tayinci memurlar arasında bilgi paylaşımı amacıyla kurulmuştur.
-                    2. İlanların ve bilgilerin doğruluğu tamamen ilanı ekleyen kullanıcının sorumluluğundadır.
-                    3. Yönetim, anlaşmazlıklardan veya oluşabilecek zararlardan sorumlu tutulamaz.
-                    4. Türkiye Cumhuriyeti yasalarına uygun davranmayı, zararlı içerik paylaşmamayı peşinen kabul edersiniz.
-                    5. Üyelik bilgileriniz (e-posta vb.) sistemde güvenle saklanır ve üçüncü şahıslarla paylaşılmaz.
-                    """)
-                tos_agreed = st.checkbox("Sözleşmeyi okudum ve kabul ediyorum.")
-                
-                if st.form_submit_button("Kayıt Ol"):
-                    if n_a and n_u and n_p and n_e:
-                        if not tos_agreed:
-                            st.error("Kayıt olmak için Kullanıcı Sözleşmesini onaylamalısınız.")
-                        elif n_u in st.session_state.users: 
-                            st.error("Bu kullanıcı adı zaten alınmış.")
-                        else:
-                            dogum_t = f"{n_gun} {n_ay} {n_yil}".strip() if (n_gun and n_ay and n_yil) else "Belirtilmemiş"
-                            # Şifre geçmişi kaldırıldı, sadece mevcut şifre tutulur
-                            u_data = {
-                                "sifre": n_p, 
-                                "rol": "kullanici", 
-                                "ad": n_a,
-                                "email": n_e,
-                                "dogum_tarihi": dogum_t,
-                                "meslek": n_meslek if n_meslek else "Belirtilmemiş",
-                                "favorites": [],
-                                "tos_agreed": True,
-                                "tos_date": datetime.now().strftime("%d.%m.%Y %H:%M")
-                            }
-                            db.collection('users').document(n_u).set(u_data)
-                            st.success("Kayıt başarılı! Lütfen Giriş Yap sekmesinden sisteme girin.")
-                    else:
-                        st.error("Lütfen zorunlu alanların (Ad, Kullanıcı Adı, E-Posta, Şifre) tamamını doldurun.")
-        
-        elif auth == "Şifremi Unuttum":
+        # Şifremi Unuttum Modu Açıksa
+        if st.session_state.get("forgot_password_mode", False):
+            st.markdown("### 🔑 Şifremi Unuttum")
+            
             if "reset_step" not in st.session_state:
                 st.session_state.reset_step = 1
                 
@@ -391,7 +234,7 @@ with st.sidebar:
                             st.session_state.reset_step = 2
                             st.rerun()
                         else:
-                            st.error("Kullanıcı adı veya E-Posta adresi sistemde bulunamadı/eşleşmedi.")
+                            st.error("Kullanıcı adı veya E-Posta adresi sistemde bulunamadı.")
                             
             elif st.session_state.reset_step == 2:
                 st.info(f"📧 E-Posta adresinize bir doğrulama kodu gönderildi! \n\n*(Prototip Test Kodu: {st.session_state.reset_code})*")
@@ -400,20 +243,96 @@ with st.sidebar:
                     new_password = st.text_input("Yeni Şifreniz", type="password")
                     if st.form_submit_button("Şifreyi Yenile"):
                         if entered_code == st.session_state.reset_code:
-                            # Şifre geçmişi kontrolü tamamen kaldırıldı. Direkt güncelleniyor.
                             db.collection('users').document(st.session_state.reset_user).update({
                                 "sifre": new_password
                             })
                             st.success("Şifreniz başarıyla yenilendi! Şimdi giriş yapabilirsiniz.")
                             st.session_state.reset_step = 1 
+                            st.session_state.forgot_password_mode = False
                             del st.session_state.reset_code
                             del st.session_state.reset_user
+                            st.rerun()
                         else:
                             st.error("Hatalı doğrulama kodu!")
-                if st.button("İptal Et / Geri Dön"):
-                    st.session_state.reset_step = 1
-                    st.rerun()
+            
+            st.markdown("---")
+            if st.button("⬅️ Geri Dön"):
+                st.session_state.forgot_password_mode = False
+                st.session_state.reset_step = 1
+                st.rerun()
 
+        # Normal Giriş / Kayıt Modu
+        else:
+            auth = st.radio("Hesap İşlemleri:", ["Giriş Yap", "Üye Ol"], horizontal=True)
+            
+            if auth == "Giriş Yap":
+                with st.form("l_f"):
+                    u = st.text_input("Kullanıcı Adı")
+                    p = st.text_input("Şifre", type="password")
+                    if st.form_submit_button("Giriş Yap"):
+                        load_data()
+                        if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
+                            st.session_state.logged_in = True
+                            st.session_state.current_user = u
+                            st.session_state.user_role = st.session_state.users[u]["rol"]
+                            st.rerun()
+                        else: st.error("Hatalı kullanıcı adı veya şifre!")
+                
+                # YENİ EKLENEN YER: Şifremi unuttum butonu tam giriş formunun altında!
+                if st.button("Şifremi Unuttum"):
+                    st.session_state.forgot_password_mode = True
+                    st.rerun()
+            
+            elif auth == "Üye Ol":
+                with st.form("s_f"):
+                    st.markdown("**Zorunlu Bilgiler**")
+                    n_a = st.text_input("Ad Soyad")
+                    n_u = st.text_input("Kullanıcı Adı")
+                    n_e = st.text_input("E-Posta Adresi")
+                    n_p = st.text_input("Şifre", type="password")
+                    
+                    st.markdown("**İsteğe Bağlı Bilgiler**")
+                    c1, c2, c3 = st.columns(3)
+                    n_gun = c1.selectbox("Gün", [""] + list(range(1, 32)))
+                    n_ay = c2.selectbox("Ay", ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"])
+                    n_yil = c3.selectbox("Yıl", [""] + list(range(1950, 2010)))
+                    n_meslek = st.text_input("Meslek")
+                    
+                    st.markdown("---")
+                    with st.expander("📄 Kullanıcı Sözleşmesi"):
+                        st.write("""
+                        **GENEL KULLANIM ŞARTLARI VE SORUMLULUK REDDİ**
+                        1. Bu platform yalnızca tayinci memurlar arasında bilgi paylaşımı amacıyla kurulmuştur.
+                        2. İlanların ve bilgilerin doğruluğu tamamen ilanı ekleyen kullanıcının sorumluluğundadır.
+                        3. Yönetim, anlaşmazlıklardan veya oluşabilecek zararlardan sorumlu tutulamaz.
+                        4. Türkiye Cumhuriyeti yasalarına uygun davranmayı, zararlı içerik paylaşmamayı peşinen kabul edersiniz.
+                        5. Üyelik bilgileriniz (e-posta vb.) sistemde güvenle saklanır ve üçüncü şahıslarla paylaşılmaz.
+                        """)
+                    tos_agreed = st.checkbox("Sözleşmeyi okudum ve kabul ediyorum.")
+                    
+                    if st.form_submit_button("Kayıt Ol"):
+                        if n_a and n_u and n_p and n_e:
+                            if not tos_agreed:
+                                st.error("Kayıt olmak için Kullanıcı Sözleşmesini onaylamalısınız.")
+                            elif n_u in st.session_state.users: 
+                                st.error("Bu kullanıcı adı zaten alınmış.")
+                            else:
+                                dogum_t = f"{n_gun} {n_ay} {n_yil}".strip() if (n_gun and n_ay and n_yil) else "Belirtilmemiş"
+                                u_data = {
+                                    "sifre": n_p, 
+                                    "rol": "kullanici", 
+                                    "ad": n_a,
+                                    "email": n_e,
+                                    "dogum_tarihi": dogum_t,
+                                    "meslek": n_meslek if n_meslek else "Belirtilmemiş",
+                                    "favorites": [],
+                                    "tos_agreed": True,
+                                    "tos_date": datetime.now().strftime("%d.%m.%Y %H:%M")
+                                }
+                                db.collection('users').document(n_u).set(u_data)
+                                st.success("Kayıt başarılı! Lütfen Giriş Yap sekmesinden sisteme girin.")
+                        else:
+                            st.error("Lütfen zorunlu alanların (Ad, Kullanıcı Adı, E-Posta, Şifre) tamamını doldurun.")
     else:
         st.success(f"Hoş geldin, {st.session_state.users[st.session_state.current_user]['ad']}")
         
@@ -489,7 +408,6 @@ if kurum_sec != "Farketmez":
 # --- 7. ANA PANEL VE SEKME YÖNETİMİ ---
 tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 
-# YENİ: Sadece 'yonetici' rolündeki hesaba Admin sekmesi gösterilir!
 if st.session_state.user_role == "yonetici": 
     tab_names.append("📊 Admin Paneli")
 
@@ -513,21 +431,21 @@ if aktif_sekme == "📍 Harita":
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
             yakindaki_kurumlar = sorted(TUM_KURUMLAR, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
-            dist_items = "".join([f"<li style='color:#1a252f; margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
+            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
             
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
             
             popup_html = f"""
-            <div style='width:240px; font-family: sans-serif; color:#1a252f;'>
+            <div style='width:240px; font-family: sans-serif;'>
                 {img_tag}
                 <b style='font-size:14px;'>{h['title']}</b><br>
                 <span style='color:#27ae60; font-size:16px; font-weight:bold;'>{h['price']} TL</span><br>
-                <hr style='margin:8px 0; border-color:#ccc;'>
-                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:linear-gradient(135deg, #059669 0%, #27ae60 100%); color:white; text-decoration:none; padding:8px; border-radius:8px; font-size:12px; font-weight:bold;">📍 Yol Tarifi Al</a>
-                <p style='font-size:11px; margin:8px 0 4px 0; color:#1a252f;'><b>En Yakın Kurumlar:</b></p>
-                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 4px; background-color: #fdfdfd;'>
+                <hr style='margin:8px 0;'>
+                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px; font-weight:bold;">📍 Yol Tarifi Al</a>
+                <p style='font-size:11px; margin:8px 0 4px 0;'><b>En Yakın Kurumlar:</b></p>
+                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px;'>
                     <ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>
                 </div>
             </div>"""
