@@ -71,7 +71,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v12").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v13").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -154,7 +154,6 @@ with st.sidebar:
     
     sehir_secenekleri = ["Türkiye Geneli"] + PLAKA_SIRALI_ILLER
     
-    # HATA ÇÖZÜMÜ 1: GPS bulunduysa anında sayfayı yenile (Tetikleyici)
     if user_location and user_location.get('latitude') not in [None, 0.0] and user_location.get('longitude') not in [None, 0.0]:
         if "📍 Bulunduğum Konum" not in sehir_secenekleri:
             sehir_secenekleri.insert(1, "📍 Bulunduğum Konum")
@@ -162,7 +161,7 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
-            st.rerun() # Konum bulunduğu an animasyonu başlatır
+            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -180,11 +179,11 @@ with st.sidebar:
         aktif_kurumlar = TUM_KURUMLAR
     elif secilen_sehir == "📍 Bulunduğum Konum":
         aktif_merkez = [user_location['latitude'], user_location['longitude']]
-        harita_zoom = 18 
+        harita_zoom = 16 # En stabil ve detaylı yakınlaştırma seviyesi
         aktif_kurumlar = [k for k in TUM_KURUMLAR if calculate_distance(aktif_merkez[0], aktif_merkez[1], k['lat'], k['lon']) <= 50]
     else:
         aktif_merkez = CITIES[secilen_sehir]["center"]
-        harita_zoom = 13
+        harita_zoom = 12
         aktif_kurumlar = CITIES[secilen_sehir]["institutions"]
 
     max_fiyat, kurum_sec, max_mesafe = 50000, "Farketmez", 50.0
@@ -273,11 +272,16 @@ aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, hor
 st.session_state.tab_index = tab_names.index(aktif_sekme)
 
 if aktif_sekme == "📍 Harita":
+    # Düzenleme: Animasyon yapmayı zorlayan ancak çökmeye neden olan kodlar standart kullanıma geri döndürüldü
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
     if secilen_sehir != "Türkiye Geneli":
         for i in aktif_kurumlar: 
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
+    
+    # Kullanıcının bulunduğu konumu belirten Kırmızı İkon
+    if secilen_sehir == "📍 Bulunduğum Konum":
+        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="red", icon="user")).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
@@ -304,16 +308,7 @@ if aktif_sekme == "📍 Harita":
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
     
-    # HATA ÇÖZÜMÜ 2: Sabit "key", center ve zoom argümanları haritanın "uçarak" gitmesini sağlar
-    m_res = st_folium(
-        m, 
-        center=aktif_merkez, 
-        zoom=harita_zoom, 
-        key="ana_harita", 
-        use_container_width=True, 
-        height=550, 
-        returned_objects=["last_clicked"]
-    )
+    m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
     
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
