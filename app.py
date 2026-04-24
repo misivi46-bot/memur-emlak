@@ -19,10 +19,11 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- YENİ: MAT ŞEHİR MANZARASI VE KOYU METİN TASARIM BLOĞU ---
+# --- YENİ: DÜZELTİLMİŞ CSS TASARIM BLOĞU ---
 st.markdown("""
     <style>
-        iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
+        /* Ana harita çerçevesi */
+        .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
         /* Ana Arka Plan Görseli (Şehir Manzarası) */
         .stApp {
@@ -32,44 +33,46 @@ st.markdown("""
             background-attachment: fixed;
         }
         
-        /* Çok parlak olmayan, transparan ve mat cam katmanı (Okunabilirliği artırır) */
+        /* Çok parlak olmayan, transparan mat cam katmanı */
         .stApp::before {
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(230, 235, 240, 0.78); /* %78 Mat Gri/Beyaz Saydamlık */
-            backdrop-filter: blur(6px); /* Manzarayı çok bozmadan hafif bulanıklaştırır */
+            background-color: rgba(230, 235, 240, 0.78);
+            backdrop-filter: blur(6px);
             z-index: -1;
         }
 
-        /* Tüm yazıları koyu antrasit yap (Butonlar hariç) */
-        p, h1, h2, h3, h4, h5, h6, span, label, li, div[data-testid="stMarkdownContainer"] {
+        /* 1. ÇÖZÜM: YAZI RENGİ DÜZELTMESİ (Sağ üst menüyü bozmaması için sadece main ve sidebar hedeflendi) */
+        .main p, .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main span, .main label, .main li, .main div[data-testid="stMarkdownContainer"],
+        [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label, [data-testid="stSidebar"] li {
             color: #1a252f !important;
         }
 
-        /* Fotoğraf Yükleme Alanı Düzeltmesi */
+        /* 2. ÇÖZÜM: GPS BUTONU BOŞLUK DÜZELTMESİ (Görünmez çerçevenin yüksekliğini daraltır) */
+        [data-testid="stSidebar"] iframe {
+            height: 45px !important;
+            min-height: 45px !important;
+            margin-bottom: 5px !important;
+        }
+
+        /* Fotoğraf Yükleme Alanı */
         [data-testid="stFileUploadDropzone"] {
             background-color: rgba(255, 255, 255, 0.90) !important;
             border: 2px dashed #27ae60 !important;
             border-radius: 10px !important;
         }
-        [data-testid="stFileUploadDropzone"] * {
-            color: #1a252f !important;
-        }
 
-        /* Metin Giriş Kutuları Düzeltmesi */
+        /* Metin Giriş Kutuları */
         .stTextInput input, .stNumberInput input, .stTextArea textarea {
             background-color: rgba(255, 255, 255, 0.95) !important;
             color: #1a252f !important;
             border: 1px solid #ccc !important;
         }
         
-        /* Selectbox (Açılır Kutu) Düzeltmesi */
+        /* Selectbox (Açılır Kutu) */
         [data-baseweb="select"] > div {
             background-color: rgba(255, 255, 255, 0.95) !important;
-        }
-        [data-baseweb="select"] * {
-            color: #1a252f !important;
         }
 
         /* Yan Menü (Sidebar) */
@@ -90,11 +93,12 @@ st.markdown("""
             border: 1px solid rgba(255,255,255,0.6);
             margin-bottom: 20px;
         }
-        div[role="radiogroup"] label {
+        div[role="radiogroup"] label, div[role="radiogroup"] p {
+            color: #1a252f !important;
             font-weight: 800 !important;
         }
 
-        /* Modern Butonlar (Yazıları zorla BEYAZ yapıldı ki yeşilde okunsun) */
+        /* Modern Butonlar (Yeşil zemin, Beyaz yazı) */
         div.stButton > button, div.stFormSubmitButton > button {
             background: linear-gradient(135deg, #059669 0%, #27ae60 100%) !important;
             border: none !important;
@@ -103,7 +107,8 @@ st.markdown("""
             box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important; 
             transition: all 0.3s ease !important;
         }
-        div.stButton > button *, div.stFormSubmitButton > button * {
+        div.stButton > button p, div.stButton > button span, 
+        div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
             color: white !important;
             font-weight: 700 !important; 
             font-size: 16px !important; 
@@ -169,7 +174,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v14").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v15").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -427,7 +432,7 @@ elif aktif_sekme == "🏠 İlan Ekle":
             rm = c1.selectbox("Oda Sayısı", ["1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             fr = c2.checkbox("Eşyalı")
             ad, co = st.text_area("Adres (*Zorunlu*)", value=a_n), st.text_area("Açıklama")
-            fl = st.file_uploader("Fotoğraf", type=["jpg", "png"])
+            fl = st.file_uploader("Fotoğraf Yükle", type=["jpg", "png"])
             if st.form_submit_button("İlanı Yayınla"):
                 if not icerik_uygun_mu(ti) or not icerik_uygun_mu(co): st.error("Kurallara aykırı kelime!")
                 elif not ti or not ad or pr <= 0: st.error("Zorunlu alanları doldurun.")
