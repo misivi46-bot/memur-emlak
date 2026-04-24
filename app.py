@@ -19,32 +19,51 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- YENİ: KUSURSUZ TASARIM, GPS BOŞLUK DÜZELTİCİ VE KIRMIZI BUTON CSS ---
+# --- YENİ: KUSURSUZ VE NET CSS TASARIM BLOĞU (Arka Plan Görseli Yok) ---
 st.markdown("""
     <style>
-        .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
+        iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
+        /* Solid Light Background */
         .stApp {
-            background-image: url("https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background-color: white !important;
         }
         
-        .stApp::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(230, 235, 240, 0.78);
-            backdrop-filter: blur(6px);
-            z-index: -1;
-        }
-
+        /* All text in main and sidebar, excluding button content */
         .main p, .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main span, .main label, .main li, .main div[data-testid="stMarkdownContainer"],
         [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label, [data-testid="stSidebar"] li {
             color: #1a252f !important;
         }
 
+        /* Photo Upload Dropzone */
+        [data-testid="stFileUploadDropzone"] {
+            background-color: #fdfdfd !important; /* light grey dropzone on white app */
+            border: 2px dashed #27ae60 !important;
+            border-radius: 10px !important;
+        }
+        /* Dropzone text specifically dark */
+        [data-testid="stFileUploadDropzone"] * { color: #1a252f !important; }
+
+        /* Metin Giriş Kutuları */
+        .stTextInput input, .stNumberInput input, .stTextArea textarea {
+            background-color: white !important;
+            color: #1a252f !important;
+            border: 1px solid #ccc !important;
+        }
+        
+        /* Selectbox (Açılır Kutu) */
+        [data-baseweb="select"] > div {
+            background-color: white !important;
+        }
+        [data-baseweb="select"] * { color: #1a252f !important; }
+
+        /* Yan Menü (Sidebar) */
+        [data-testid="stSidebar"] {
+            background-color: #f7f7f7 !important; /* slightly distinct light grey sidebar on white app */
+            border-right: 1px solid #eee;
+        }
+        
+        /* GPS BUTONU BOŞLUK DÜZELTMESİ (Görünmez çerçevenin yüksekliğini daraltır) */
         [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
             height: 45px !important;
             min-height: 45px !important;
@@ -58,36 +77,15 @@ st.markdown("""
             max-height: 45px !important;
         }
 
-        [data-testid="stFileUploadDropzone"] {
-            background-color: rgba(255, 255, 255, 0.90) !important;
-            border: 2px dashed #27ae60 !important;
-            border-radius: 10px !important;
-        }
-
-        .stTextInput input, .stNumberInput input, .stTextArea textarea {
-            background-color: rgba(255, 255, 255, 0.95) !important;
-            color: #1a252f !important;
-            border: 1px solid #ccc !important;
-        }
-        
-        [data-baseweb="select"] > div {
-            background-color: rgba(255, 255, 255, 0.95) !important;
-        }
-
-        [data-testid="stSidebar"] {
-            background-color: rgba(255, 255, 255, 0.65) !important;
-            backdrop-filter: blur(15px) !important;
-            border-right: 1px solid rgba(255,255,255,0.5);
-        }
-
+        /* Sekme Menüsü (Radyo Butonları) */
         div[role="radiogroup"] { 
             flex-direction: row; 
             gap: 15px; 
-            background: rgba(255, 255, 255, 0.90);
+            background: white;
             padding: 12px 20px;
             border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); /* very light shadow */
+            border: 1px solid #eee;
             margin-bottom: 20px;
         }
         div[role="radiogroup"] label, div[role="radiogroup"] p {
@@ -101,21 +99,11 @@ st.markdown("""
             border: none !important;
             border-radius: 12px !important;
             padding: 10px 24px !important;
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important; 
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2) !important; /* Lighter shadow on white */
             transition: all 0.3s ease !important;
         }
         
-        /* Hesap Silme Kırmızı Buton (Primary Type) */
-        div.stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3) !important; 
-        }
-        div.stButton > button[kind="primary"]:hover {
-            transform: translateY(-2px) !important;
-            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
-            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.45) !important;
-        }
-
+        /* TEXT INSIDE GREEN BUTTONS - Ensuring it's always white */
         div.stButton > button p, div.stButton > button span, 
         div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
             color: white !important;
@@ -124,16 +112,32 @@ st.markdown("""
         }
         div.stButton > button:hover:not([kind="primary"]), div.stFormSubmitButton > button:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.45) !important;
+            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3) !important;
         }
         
+        /* Special Account Delete Kırmızı Buton (Primary Kind) */
+        div.stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2) !important; 
+        }
+        /* Ensure *content* of primary button is also white - explicit inner element targeting safer than global */
+        div.stButton > button[kind="primary"] p, div.stButton > button[kind="primary"] span {
+            color: white !important;
+        }
+        
+        div.stButton > button[kind="primary"]:hover {
+            transform: translateY(-2px) !important;
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.35) !important;
+        }
+        
+        /* Formlar ve Expander Açılır Kutular */
         div[data-testid="stForm"], div[data-testid="stExpander"] {
-            background-color: rgba(255, 255, 255, 0.85); 
+            background-color: white !important; 
             border-radius: 15px;
             padding: 15px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #eee !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -189,7 +193,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v16").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v17").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -279,6 +283,7 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
+            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
