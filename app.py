@@ -19,40 +19,82 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# YENİ: MODERN CSS TASARIM BLOĞU
+# YENİ: GLASSMORPHISM (BUZLU CAM) VE EMLAK ARKA PLANI CSS BLOĞU
 st.markdown("""
     <style>
-        iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
-        .main { background-color: #f8f9fa; }
-        div[role="radiogroup"] { flex-direction: row; gap: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        /* Ana Arka Plan Görseli (Emlak Teması) */
+        .stApp {
+            background-image: url("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2075&auto=format&fit=crop");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
         
-        /* Modern Buton ve Form Gönderim Butonu Tasarımları */
+        /* Görselin üzerine okumayı kolaylaştıran aydınlık buzlu cam filtresi */
+        .stApp::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(245, 247, 250, 0.88); /* %88 Beyazlık */
+            z-index: -1;
+        }
+
+        /* Yan Menü (Sidebar) Cam Efekti */
+        [data-testid="stSidebar"] {
+            background-color: rgba(255, 255, 255, 0.5) !important;
+            backdrop-filter: blur(12px) !important;
+            border-right: 1px solid rgba(255,255,255,0.4);
+        }
+
+        /* Sekme Menüsü (Radyo Butonları) Yüzen Kutu Tasarımı */
+        div[role="radiogroup"] { 
+            flex-direction: row; 
+            gap: 10px; 
+            background: rgba(255, 255, 255, 0.65);
+            padding: 10px 15px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+
+        /* Harita Çerçevesi */
+        iframe { 
+            max-width: 100% !important; 
+            overflow: hidden !important; 
+            border-radius: 16px; 
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        
+        /* Modern Butonlar */
         div.stButton > button, div.stFormSubmitButton > button {
             background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
             color: white !important;
             border: none !important;
             border-radius: 10px !important;
-            padding: 10px 24px !important;
+            padding: 8px 24px !important;
             font-weight: 600 !important;
-            font-size: 15px !important;
             box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
             transition: all 0.3s ease !important;
         }
-        
-        /* Butonun Üzerine Fare Gelince (Hover) */
         div.stButton > button:hover, div.stFormSubmitButton > button:hover {
             transform: translateY(-2px) !important;
             box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
-            background: linear-gradient(135deg, #219653 0%, #27ae60 100%) !important;
-            color: white !important;
-            border: none !important;
         }
-        
-        /* Butona Tıklanınca (Active) */
         div.stButton > button:active, div.stFormSubmitButton > button:active {
             transform: translateY(1px) !important;
             box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
-            border: none !important;
+        }
+        
+        /* Formlar ve Açılır Kutular (Expander) */
+        div[data-testid="stForm"], div[data-testid="stExpander"] {
+            background-color: rgba(255, 255, 255, 0.75);
+            border-radius: 15px;
+            padding: 10px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -101,7 +143,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v14").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v15").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -223,7 +265,7 @@ with st.sidebar:
         if auth == "Giriş Yap":
             with st.form("l_f"):
                 u, p = st.text_input("Kullanıcı Adı"), st.text_input("Şifre", type="password")
-                if st.form_submit_button("Giriş"):
+                if st.form_submit_button("Giriş Yap"):
                     load_data()
                     if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
                         st.session_state.logged_in, st.session_state.current_user, st.session_state.user_role = True, u, st.session_state.users[u]["rol"]
