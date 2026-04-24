@@ -19,95 +19,13 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- İSTENİLEN MODERN CSS TASARIM BLOĞU ---
+# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tasarım Streamlit'in Orijinal Haline Bırakıldı) ---
 st.markdown("""
     <style>
-        /* Ana Arka Plan Görseli (Emlak Teması) */
-        .stApp {
-            background-image: url("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2075&auto=format&fit=crop");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
+        /* Harita Çerçevesi Düzeltmesi */
+        .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
-        /* Görselin üzerine okumayı kolaylaştıran aydınlık buzlu cam filtresi */
-        .stApp::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(245, 247, 250, 0.88); /* %88 Beyazlık */
-            z-index: -1;
-        }
-
-        /* Yan Menü (Sidebar) Cam Efekti */
-        [data-testid="stSidebar"] {
-            background-color: rgba(255, 255, 255, 0.5) !important;
-            backdrop-filter: blur(12px) !important;
-            border-right: 1px solid rgba(255,255,255,0.4);
-        }
-
-        /* Sekme Menüsü (Radyo Butonları) Yüzen Kutu Tasarımı */
-        div[role="radiogroup"] { 
-            flex-direction: row; 
-            gap: 10px; 
-            background: rgba(255, 255, 255, 0.65);
-            padding: 10px 15px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            backdrop-filter: blur(10px);
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.6);
-        }
-
-        /* Harita Çerçevesi */
-        iframe { 
-            max-width: 100% !important; 
-            overflow: hidden !important; 
-            border-radius: 16px; 
-            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-        }
-        
-        /* Modern Butonlar */
-        div.stButton > button, div.stFormSubmitButton > button {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 10px !important;
-            padding: 8px 24px !important;
-            font-weight: 600 !important;
-            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
-            transition: all 0.3s ease !important;
-        }
-        div.stButton > button:hover, div.stFormSubmitButton > button:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
-        }
-        div.stButton > button:active, div.stFormSubmitButton > button:active {
-            transform: translateY(1px) !important;
-            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
-        }
-        
-        /* Sadece Hesabı Sil Butonu İçin Kırmızı Tema (Primary Type) */
-        div.stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
-            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3) !important;
-        }
-        div.stButton > button[kind="primary"]:hover {
-            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
-            box-shadow: 0 6px 15px rgba(231, 76, 60, 0.4) !important;
-        }
-
-        /* Formlar ve Açılır Kutular (Expander) */
-        div[data-testid="stForm"], div[data-testid="stExpander"] {
-            background-color: rgba(255, 255, 255, 0.75);
-            border-radius: 15px;
-            padding: 10px;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        }
-        
-        /* GPS Butonu Boşluk Düzeltmesi (Sadece ebatlar düzeltildi, renklere dokunulmadı) */
+        /* GPS Butonu Devasa Boşluk Düzeltmesi */
         [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
             height: 45px !important;
             min-height: 45px !important;
@@ -174,7 +92,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v20").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v21").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -293,7 +211,7 @@ with st.sidebar:
     oda_sec, esya_sec = "Farketmez", "Farketmez"
 
     if not st.session_state.logged_in:
-        auth = st.radio("Seçim:", ["Giriş Yap", "Üye Ol"])
+        auth = st.radio("Seçim:", ["Giriş Yap", "Üye Ol"], horizontal=True)
         if auth == "Giriş Yap":
             with st.form("l_f"):
                 u, p = st.text_input("Kullanıcı Adı"), st.text_input("Şifre", type="password")
@@ -309,7 +227,7 @@ with st.sidebar:
                 n_u = st.text_input("Kullanıcı Adı")
                 n_p = st.text_input("Şifre", type="password")
                 
-                # --- YENİ: KULLANICI SÖZLEŞMESİ (MODERN TASARIMA ENTEGRE) ---
+                # --- KULLANICI SÖZLEŞMESİ ONAY BÖLÜMÜ ---
                 st.markdown("---")
                 with st.expander("📄 Kullanıcı Sözleşmesi"):
                     st.write("""
@@ -318,7 +236,7 @@ with st.sidebar:
                     2. İlanların ve bilgilerin doğruluğu tamamen ilanı ekleyen kullanıcının sorumluluğundadır.
                     3. Yönetim, anlaşmazlıklardan veya oluşabilecek zararlardan sorumlu tutulamaz.
                     4. Türkiye Cumhuriyeti yasalarına uygun davranmayı, zararlı içerik paylaşmamayı peşinen kabul edersiniz.
-                    5. Üyelik bilgileriniz sistemde güvenle saklanır ve üçüncü şahıslarla paylaşılmaz.
+                    5. Üyelik bilgileriniz sistemde güvenle saklanır.
                     """)
                 tos_agreed = st.checkbox("Sözleşmeyi okudum ve kabul ediyorum.")
                 
@@ -329,7 +247,6 @@ with st.sidebar:
                         elif n_u in st.session_state.users: 
                             st.error("Bu kullanıcı adı zaten alınmış.")
                         else:
-                            # Veritabanına sözleşme onayı kaydediliyor
                             u_data = {
                                 "sifre": n_p, 
                                 "rol": "kullanici", 
@@ -364,15 +281,15 @@ with st.sidebar:
                         db.collection('users').document(st.session_state.current_user).update({"sifre": new_p})
                         st.success("Güncellendi.")
                 
-                # --- YENİ: HESAP SİLME / ÜYELİKTEN AYRILMA BÖLÜMÜ ---
+                # --- HESAP SİLME / ÜYELİKTEN AYRILMA BÖLÜMÜ ---
                 st.markdown("---")
                 st.markdown("**❌ Hesabımı Sil**")
-                st.warning("Dikkat: Hesabınızı sildiğinizde profiliniz, ilanlarınız ve sözleşme onaylarınız veritabanından kalıcı olarak yok edilir.")
+                st.warning("Dikkat: Hesabınızı sildiğinizde profiliniz, ilanlarınız ve sözleşme onaylarınız kalıcı olarak yok edilir.")
                 del_confirm = st.checkbox("Ayrılmak istediğine emin misin?")
                 
+                # kind="primary" Streamlit'in kendi varsayılan kırmızı vurgulu butonudur.
                 if st.button("Üyelikten Ayrıl", type="primary"):
                     if del_confirm:
-                        # Veritabanından kullanıcıyı tamamen yok et
                         db.collection('users').document(st.session_state.current_user).delete()
                         st.session_state.logged_in = False
                         st.session_state.current_user = None
@@ -385,7 +302,7 @@ with st.sidebar:
         with st.expander("🔍 Detaylı Filtrele"):
             max_fiyat = st.slider("Maks. Bütçe", 0, 50000, 50000, step=500)
             oda_sec = st.selectbox("Oda", ["Farketmez", "1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
-            esya_sec = st.radio("Eşya", ["Farketmez", "Eşyalı", "Boş"])
+            esya_sec = st.radio("Eşya", ["Farketmez", "Eşyalı", "Boş"], horizontal=True)
             
             if secilen_sehir not in ["Türkiye Geneli"]:
                 kurum_sec = st.selectbox("Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in aktif_kurumlar])
@@ -431,27 +348,27 @@ if aktif_sekme == "📍 Harita":
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
     if secilen_sehir == "📍 Bulunduğum Konum":
-        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="red", icon="user")).add_to(m)
+        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="cadetblue", icon="crosshairs", prefix="fa")).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
             yakindaki_kurumlar = sorted(TUM_KURUMLAR, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
-            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
+            dist_items = "".join([f"<li style='color:#333; margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
             
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
             
             popup_html = f"""
-            <div style='width:240px; font-family: sans-serif;'>
+            <div style='width:240px; font-family: sans-serif; color:#333;'>
                 {img_tag}
                 <b style='font-size:14px;'>{h['title']}</b><br>
                 <span style='color:#27ae60; font-size:16px; font-weight:bold;'>{h['price']} TL</span><br>
-                <hr style='margin:8px 0;'>
-                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px;">📍 Yol Tarifi Al</a>
-                <p style='font-size:11px; margin:8px 0 4px 0;'><b>En Yakın Kurumlar:</b></p>
-                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background-color: #fcfcfc;'>
+                <hr style='margin:8px 0; border-color:#ccc;'>
+                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px; font-weight:bold;">📍 Yol Tarifi Al</a>
+                <p style='font-size:11px; margin:8px 0 4px 0; color:#333;'><b>En Yakın Kurumlar:</b></p>
+                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 4px; background-color: #fcfcfc;'>
                     <ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>
                 </div>
             </div>"""
@@ -568,7 +485,7 @@ elif aktif_sekme == "📊 Admin":
         c2.metric("İlan", len(st.session_state.houses))
         c3.metric("Mesaj", len(st.session_state.messages))
         
-        # --- YENİ: YÖNETİCİ KULLANICI SÖZLEŞMESİ ONAY EKRANI ---
+        # --- YÖNETİCİ KULLANICI SÖZLEŞMESİ ONAY EKRANI ---
         st.markdown("---")
         st.subheader("📝 Kullanıcı Sözleşmesi Onay Listesi")
         for u_id, u_info in st.session_state.users.items():
