@@ -4,3 +4,4 @@ streamlit-folium
 geopy
 google-cloud-firestore
 Pillow
+streamlit-geolocation
