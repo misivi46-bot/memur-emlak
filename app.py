@@ -71,7 +71,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v10").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v11").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -178,7 +178,6 @@ with st.sidebar:
         aktif_kurumlar = TUM_KURUMLAR
     elif secilen_sehir == "📍 Bulunduğum Konum":
         aktif_merkez = [user_location['latitude'], user_location['longitude']]
-        # GÜNCELLEME: En yakın zoom seviyesi 18 olarak ayarlandı
         harita_zoom = 18 
         aktif_kurumlar = [k for k in TUM_KURUMLAR if calculate_distance(aktif_merkez[0], aktif_merkez[1], k['lat'], k['lon']) <= 50]
     else:
@@ -272,6 +271,7 @@ aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, hor
 st.session_state.tab_index = tab_names.index(aktif_sekme)
 
 if aktif_sekme == "📍 Harita":
+    # Temel haritayı her zaman aynı merkezle başlatıyoruz ki Streamlit tamamen yeniden render etmesin.
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
     if secilen_sehir != "Türkiye Geneli":
@@ -303,7 +303,15 @@ if aktif_sekme == "📍 Harita":
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
     
-    m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
+    # EKLENEN ANİMASYONLU ZOOM KODU: center ve zoom argümanları React'a "FlyTo" emri gönderir
+    m_res = st_folium(
+        m, 
+        center=aktif_merkez, 
+        zoom=harita_zoom, 
+        use_container_width=True, 
+        height=550, 
+        returned_objects=["last_clicked"]
+    )
     
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
