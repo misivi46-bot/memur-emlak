@@ -19,7 +19,7 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- YENİ: DÜZELTİLMİŞ CSS TASARIM BLOĞU ---
+# --- YENİ: KUSURSUZ TASARIM VE GPS BOŞLUK DÜZELTİCİ CSS ---
 st.markdown("""
     <style>
         /* Ana harita çerçevesi */
@@ -43,17 +43,24 @@ st.markdown("""
             z-index: -1;
         }
 
-        /* 1. ÇÖZÜM: YAZI RENGİ DÜZELTMESİ (Sağ üst menüyü bozmaması için sadece main ve sidebar hedeflendi) */
+        /* YAZI RENGİ DÜZELTMESİ (Sağ üst menüyü bozmaması için sadece main ve sidebar hedeflendi) */
         .main p, .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main span, .main label, .main li, .main div[data-testid="stMarkdownContainer"],
         [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label, [data-testid="stSidebar"] li {
             color: #1a252f !important;
         }
 
-        /* 2. ÇÖZÜM: GPS BUTONU BOŞLUK DÜZELTMESİ (Görünmez çerçevenin yüksekliğini daraltır) */
+        /* YENİ: GPS BUTONU BOŞLUK DÜZELTMESİ (Görünmez çerçevenin yüksekliğini daraltır) */
+        [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
+            height: 45px !important;
+            min-height: 45px !important;
+            max-height: 45px !important;
+            margin-bottom: 0px !important;
+            overflow: hidden !important;
+        }
         [data-testid="stSidebar"] iframe {
             height: 45px !important;
             min-height: 45px !important;
-            margin-bottom: 5px !important;
+            max-height: 45px !important;
         }
 
         /* Fotoğraf Yükleme Alanı */
@@ -174,7 +181,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v15").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v16").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -264,6 +271,7 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
+            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -381,34 +389,42 @@ if aktif_sekme == "📍 Harita":
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
     if secilen_sehir == "📍 Bulunduğum Konum":
-        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="red", icon="user")).add_to(m)
+        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="cadetblue", icon="crosshairs", prefix="fa")).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
             yakindaki_kurumlar = sorted(TUM_KURUMLAR, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
-            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
+            dist_items = "".join([f"<li style='color:#1a252f; margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
             
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
             
             popup_html = f"""
-            <div style='width:240px; font-family: sans-serif;'>
+            <div style='width:240px; font-family: sans-serif; color:#1a252f;'>
                 {img_tag}
                 <b style='font-size:14px;'>{h['title']}</b><br>
                 <span style='color:#27ae60; font-size:16px; font-weight:bold;'>{h['price']} TL</span><br>
-                <hr style='margin:8px 0;'>
-                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px;">📍 Yol Tarifi Al</a>
-                <p style='font-size:11px; margin:8px 0 4px 0;'><b>En Yakın Kurumlar:</b></p>
-                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background-color: #fcfcfc;'>
+                <hr style='margin:8px 0; border-color:#ccc;'>
+                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:linear-gradient(135deg, #059669 0%, #27ae60 100%); color:white; text-decoration:none; padding:8px; border-radius:8px; font-size:12px; font-weight:bold;">📍 Yol Tarifi Al</a>
+                <p style='font-size:11px; margin:8px 0 4px 0; color:#1a252f;'><b>En Yakın Kurumlar:</b></p>
+                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 4px; background-color: #fdfdfd;'>
                     <ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>
                 </div>
             </div>"""
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
     
-    m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
+    m_res = st_folium(
+        m, 
+        center=aktif_merkez, 
+        zoom=harita_zoom, 
+        key="ana_harita", 
+        use_container_width=True, 
+        height=550, 
+        returned_objects=["last_clicked"]
+    )
     
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
