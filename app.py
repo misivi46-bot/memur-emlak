@@ -71,7 +71,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v11").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v12").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -154,6 +154,7 @@ with st.sidebar:
     
     sehir_secenekleri = ["Türkiye Geneli"] + PLAKA_SIRALI_ILLER
     
+    # HATA ÇÖZÜMÜ 1: GPS bulunduysa anında sayfayı yenile (Tetikleyici)
     if user_location and user_location.get('latitude') not in [None, 0.0] and user_location.get('longitude') not in [None, 0.0]:
         if "📍 Bulunduğum Konum" not in sehir_secenekleri:
             sehir_secenekleri.insert(1, "📍 Bulunduğum Konum")
@@ -161,6 +162,7 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
+            st.rerun() # Konum bulunduğu an animasyonu başlatır
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -182,7 +184,7 @@ with st.sidebar:
         aktif_kurumlar = [k for k in TUM_KURUMLAR if calculate_distance(aktif_merkez[0], aktif_merkez[1], k['lat'], k['lon']) <= 50]
     else:
         aktif_merkez = CITIES[secilen_sehir]["center"]
-        harita_zoom = 12
+        harita_zoom = 13
         aktif_kurumlar = CITIES[secilen_sehir]["institutions"]
 
     max_fiyat, kurum_sec, max_mesafe = 50000, "Farketmez", 50.0
@@ -271,7 +273,6 @@ aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, hor
 st.session_state.tab_index = tab_names.index(aktif_sekme)
 
 if aktif_sekme == "📍 Harita":
-    # Temel haritayı her zaman aynı merkezle başlatıyoruz ki Streamlit tamamen yeniden render etmesin.
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
     if secilen_sehir != "Türkiye Geneli":
@@ -303,11 +304,12 @@ if aktif_sekme == "📍 Harita":
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
     
-    # EKLENEN ANİMASYONLU ZOOM KODU: center ve zoom argümanları React'a "FlyTo" emri gönderir
+    # HATA ÇÖZÜMÜ 2: Sabit "key", center ve zoom argümanları haritanın "uçarak" gitmesini sağlar
     m_res = st_folium(
         m, 
         center=aktif_merkez, 
         zoom=harita_zoom, 
+        key="ana_harita", 
         use_container_width=True, 
         height=550, 
         returned_objects=["last_clicked"]
