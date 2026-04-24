@@ -19,40 +19,121 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# YENİ: MODERN CSS TASARIM BLOĞU
+# --- YENİ: KUSURSUZ TASARIM, GPS BOŞLUK DÜZELTİCİ VE KIRMIZI BUTON CSS ---
 st.markdown("""
     <style>
-        iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
-        .main { background-color: #f8f9fa; }
-        div[role="radiogroup"] { flex-direction: row; gap: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
-        /* Modern Buton ve Form Gönderim Butonu Tasarımları */
-        div.stButton > button, div.stFormSubmitButton > button {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
-            color: white !important;
-            border: none !important;
+        .stApp {
+            background-image: url("https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        .stApp::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(230, 235, 240, 0.78);
+            backdrop-filter: blur(6px);
+            z-index: -1;
+        }
+
+        .main p, .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main span, .main label, .main li, .main div[data-testid="stMarkdownContainer"],
+        [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label, [data-testid="stSidebar"] li {
+            color: #1a252f !important;
+        }
+
+        [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
+            height: 45px !important;
+            min-height: 45px !important;
+            max-height: 45px !important;
+            margin-bottom: 0px !important;
+            overflow: hidden !important;
+        }
+        [data-testid="stSidebar"] iframe {
+            height: 45px !important;
+            min-height: 45px !important;
+            max-height: 45px !important;
+        }
+
+        [data-testid="stFileUploadDropzone"] {
+            background-color: rgba(255, 255, 255, 0.90) !important;
+            border: 2px dashed #27ae60 !important;
             border-radius: 10px !important;
+        }
+
+        .stTextInput input, .stNumberInput input, .stTextArea textarea {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            color: #1a252f !important;
+            border: 1px solid #ccc !important;
+        }
+        
+        [data-baseweb="select"] > div {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        [data-testid="stSidebar"] {
+            background-color: rgba(255, 255, 255, 0.65) !important;
+            backdrop-filter: blur(15px) !important;
+            border-right: 1px solid rgba(255,255,255,0.5);
+        }
+
+        div[role="radiogroup"] { 
+            flex-direction: row; 
+            gap: 15px; 
+            background: rgba(255, 255, 255, 0.90);
+            padding: 12px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.6);
+            margin-bottom: 20px;
+        }
+        div[role="radiogroup"] label, div[role="radiogroup"] p {
+            color: #1a252f !important;
+            font-weight: 800 !important;
+        }
+
+        /* Standart Yeşil Butonlar */
+        div.stButton > button, div.stFormSubmitButton > button {
+            background: linear-gradient(135deg, #059669 0%, #27ae60 100%) !important;
+            border: none !important;
+            border-radius: 12px !important;
             padding: 10px 24px !important;
-            font-weight: 600 !important;
-            font-size: 15px !important;
-            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important; 
             transition: all 0.3s ease !important;
         }
         
-        /* Butonun Üzerine Fare Gelince (Hover) */
-        div.stButton > button:hover, div.stFormSubmitButton > button:hover {
+        /* Hesap Silme Kırmızı Buton (Primary Type) */
+        div.stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3) !important; 
+        }
+        div.stButton > button[kind="primary"]:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
-            background: linear-gradient(135deg, #219653 0%, #27ae60 100%) !important;
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.45) !important;
+        }
+
+        div.stButton > button p, div.stButton > button span, 
+        div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
             color: white !important;
-            border: none !important;
+            font-weight: 700 !important; 
+            font-size: 16px !important; 
+        }
+        div.stButton > button:hover:not([kind="primary"]), div.stFormSubmitButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.45) !important;
         }
         
-        /* Butona Tıklanınca (Active) */
-        div.stButton > button:active, div.stFormSubmitButton > button:active {
-            transform: translateY(1px) !important;
-            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
-            border: none !important;
+        div[data-testid="stForm"], div[data-testid="stExpander"] {
+            background-color: rgba(255, 255, 255, 0.85); 
+            border-radius: 15px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -76,7 +157,14 @@ def load_data():
     st.session_state.users = {doc.id: doc.to_dict() for doc in db.collection('users').stream()}
     
     if "misivi46" not in st.session_state.users:
-        admin_data = {"sifre": "Elvinmelek46**", "rol": "yonetici", "ad": "Sinan", "favorites": []}
+        admin_data = {
+            "sifre": "Elvinmelek46**", 
+            "rol": "yonetici", 
+            "ad": "Sinan", 
+            "favorites": [],
+            "tos_agreed": True,
+            "tos_date": "Sistem Kurucusu"
+        }
         db.collection('users').document("misivi46").set(admin_data)
         st.session_state.users["misivi46"] = admin_data
 
@@ -101,7 +189,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v14").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v16").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -223,7 +311,7 @@ with st.sidebar:
         if auth == "Giriş Yap":
             with st.form("l_f"):
                 u, p = st.text_input("Kullanıcı Adı"), st.text_input("Şifre", type="password")
-                if st.form_submit_button("Giriş"):
+                if st.form_submit_button("Giriş Yap"):
                     load_data()
                     if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
                         st.session_state.logged_in, st.session_state.current_user, st.session_state.user_role = True, u, st.session_state.users[u]["rol"]
@@ -232,18 +320,46 @@ with st.sidebar:
         else:
             with st.form("s_f"):
                 n_a, n_u, n_p = st.text_input("Ad Soyad"), st.text_input("Kullanıcı Adı"), st.text_input("Şifre", type="password")
+                
+                # --- YENİ: KULLANICI SÖZLEŞMESİ VE ONAY KUTUSU ---
+                st.markdown("---")
+                with st.expander("📄 Kullanıcı Sözleşmesi"):
+                    st.write("""
+                    **GENEL KULLANIM ŞARTLARI VE SORUMLULUK REDDİ**
+                    1. Bu platform (Memur Emlak & Tayin Portalı) yalnızca tayinci memurlar arasında bilgi paylaşımı ve iletişim amacıyla kurulmuştur.
+                    2. Platformda yer alan emlak ilanlarının, fiyatların, adres ve açıklamaların doğruluğu tamamen ilanı ekleyen kullanıcının sorumluluğundadır.
+                    3. Platform yönetimi, kullanıcılar arasındaki anlaşmazlıklardan, asılsız ilanlardan veya oluşabilecek maddi/manevi zararlardan hiçbir şekilde sorumlu tutulamaz.
+                    4. Kullanıcılar, Türkiye Cumhuriyeti yasalarına uygun davranmayı, yanıltıcı, ahlaka aykırı veya zararlı içerik paylaşmamayı peşinen kabul eder.
+                    5. Üyelik bilgileriniz sistemin işleyişi için veritabanında güvenle saklanır ve üçüncü şahıslarla paylaşılmaz. Kayıt olarak bu şartları kabul etmiş sayılırsınız.
+                    """)
+                tos_agreed = st.checkbox("Sözleşmeyi okudum, tüm sorumlulukları kabul ediyorum.")
+                
                 if st.form_submit_button("Kayıt Ol"):
                     if n_a and n_u and n_p:
-                        if n_u in st.session_state.users: st.error("Kullanıcı adı alınmış.")
+                        if not tos_agreed:
+                            st.error("Kayıt olmak için Kullanıcı Sözleşmesini onaylamanız gerekmektedir.")
+                        elif n_u in st.session_state.users: 
+                            st.error("Bu kullanıcı adı zaten alınmış.")
                         else:
-                            u_data = {"sifre": n_p, "rol": "kullanici", "ad": n_a, "favorites": []}
+                            # Veritabanına sözleşme onayını da kaydediyoruz
+                            u_data = {
+                                "sifre": n_p, 
+                                "rol": "kullanici", 
+                                "ad": n_a, 
+                                "favorites": [],
+                                "tos_agreed": True,
+                                "tos_date": datetime.now().strftime("%d.%m.%Y %H:%M")
+                            }
                             db.collection('users').document(n_u).set(u_data)
-                            st.success("Kayıt başarılı!")
+                            st.success("Kayıt başarılı! Giriş yapabilirsiniz.")
+                    else:
+                        st.error("Lütfen tüm alanları doldurun.")
     else:
         st.success(f"Hoş geldin, {st.session_state.users[st.session_state.current_user]['ad']}")
         
-        with st.expander("⚙️ Şifre İşlemleri"):
+        with st.expander("⚙️ Hesap İşlemleri"):
             if st.session_state.user_role == "yonetici":
+                st.markdown("**Kullanıcı Şifresi Sıfırla**")
                 target = st.selectbox("Üye Seç:", list(st.session_state.users.keys()))
                 new_p_admin = st.text_input("Yeni Şifre", type="password", key="admin_pw_input")
                 if st.button("Şifreyi Güncelle", key="admin_pw_btn"):
@@ -252,12 +368,32 @@ with st.sidebar:
                         db.collection('users').document(target).update({"sifre": new_p_admin})
                         st.success("Güncellendi.")
             else:
+                st.markdown("**Şifre Değiştir**")
                 old_p, new_p = st.text_input("Eski Şifre", type="password"), st.text_input("Yeni Şifre", type="password")
                 if st.button("Şifremi Kaydet"):
                     if old_p == st.session_state.users[st.session_state.current_user]["sifre"] and new_p:
                         st.session_state.users[st.session_state.current_user]["sifre"] = new_p
                         db.collection('users').document(st.session_state.current_user).update({"sifre": new_p})
                         st.success("Güncellendi.")
+                
+                # --- YENİ: HESAP SİLME BÖLÜMÜ ---
+                st.markdown("---")
+                st.markdown("**❌ Hesabımı Sil**")
+                st.warning("Dikkat: Hesabınızı sildiğinizde profiliniz ve onayladığınız sözleşmeler veritabanından kalıcı olarak yok edilir.")
+                del_confirm = st.checkbox("Ayrılmak istediğine emin misin?")
+                
+                if st.button("Üyelikten Ayrıl", type="primary"):
+                    if del_confirm:
+                        # Veritabanından kullanıcıyı tamamen yok et
+                        db.collection('users').document(st.session_state.current_user).delete()
+                        # Çıkış yap
+                        st.session_state.logged_in = False
+                        st.session_state.current_user = None
+                        st.session_state.user_role = None
+                        st.success("Hesabınız kalıcı olarak silinmiştir. Hoşça kalın!")
+                        st.rerun()
+                    else:
+                        st.error("Lütfen işlemi onaylamak için kutucuğu işaretleyin.")
 
         with st.expander("🔍 Detaylı Filtrele"):
             max_fiyat = st.slider("Maks. Bütçe", 0, 50000, 50000, step=500)
@@ -308,34 +444,42 @@ if aktif_sekme == "📍 Harita":
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
     if secilen_sehir == "📍 Bulunduğum Konum":
-        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="red", icon="user")).add_to(m)
+        folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="cadetblue", icon="crosshairs", prefix="fa")).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
             yakindaki_kurumlar = sorted(TUM_KURUMLAR, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
-            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
+            dist_items = "".join([f"<li style='color:#1a252f; margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
             
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
             
             popup_html = f"""
-            <div style='width:240px; font-family: sans-serif;'>
+            <div style='width:240px; font-family: sans-serif; color:#1a252f;'>
                 {img_tag}
                 <b style='font-size:14px;'>{h['title']}</b><br>
                 <span style='color:#27ae60; font-size:16px; font-weight:bold;'>{h['price']} TL</span><br>
-                <hr style='margin:8px 0;'>
-                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px;">📍 Yol Tarifi Al</a>
-                <p style='font-size:11px; margin:8px 0 4px 0;'><b>En Yakın Kurumlar:</b></p>
-                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background-color: #fcfcfc;'>
+                <hr style='margin:8px 0; border-color:#ccc;'>
+                <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:linear-gradient(135deg, #059669 0%, #27ae60 100%); color:white; text-decoration:none; padding:8px; border-radius:8px; font-size:12px; font-weight:bold;">📍 Yol Tarifi Al</a>
+                <p style='font-size:11px; margin:8px 0 4px 0; color:#1a252f;'><b>En Yakın Kurumlar:</b></p>
+                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 4px; background-color: #fdfdfd;'>
                     <ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>
                 </div>
             </div>"""
             folium.Marker([h["lat"], h["lon"]], popup=folium.Popup(popup_html, max_width=260), icon=folium.Icon(color="green", icon="home")).add_to(marker_cluster)
     else: st.info("İlanları görmek için giriş yapın.")
     
-    m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
+    m_res = st_folium(
+        m, 
+        center=aktif_merkez, 
+        zoom=harita_zoom, 
+        key="ana_harita", 
+        use_container_width=True, 
+        height=550, 
+        returned_objects=["last_clicked"]
+    )
     
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
@@ -359,7 +503,7 @@ elif aktif_sekme == "🏠 İlan Ekle":
             rm = c1.selectbox("Oda Sayısı", ["1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             fr = c2.checkbox("Eşyalı")
             ad, co = st.text_area("Adres (*Zorunlu*)", value=a_n), st.text_area("Açıklama")
-            fl = st.file_uploader("Fotoğraf", type=["jpg", "png"])
+            fl = st.file_uploader("Fotoğraf Yükle", type=["jpg", "png"])
             if st.form_submit_button("İlanı Yayınla"):
                 if not icerik_uygun_mu(ti) or not icerik_uygun_mu(co): st.error("Kurallara aykırı kelime!")
                 elif not ti or not ad or pr <= 0: st.error("Zorunlu alanları doldurun.")
@@ -436,3 +580,12 @@ elif aktif_sekme == "📊 Admin":
         c1.metric("Kullanıcı", len(st.session_state.users))
         c2.metric("İlan", len(st.session_state.houses))
         c3.metric("Mesaj", len(st.session_state.messages))
+        
+        # --- YENİ: YÖNETİCİ İÇİN KULLANICI SÖZLEŞMESİ ONAY TAKİP ALANI ---
+        st.markdown("---")
+        st.subheader("📝 Kullanıcı Sözleşmesi Onay Listesi")
+        for u_id, u_info in st.session_state.users.items():
+            if u_info.get("rol") != "yonetici":
+                # Veritabanında onay varsa tarihini çek, yoksa uyar
+                onay_durumu = f"✅ Onaylandı ({u_info.get('tos_date', 'Tarih Yok')})" if u_info.get("tos_agreed") else "❌ Onay Yok"
+                st.write(f"Kullanıcı: **{u_id}** | Ad: {u_info.get('ad')} | Durum: {onay_durumu}")
