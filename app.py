@@ -70,7 +70,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v7").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_final").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -80,8 +80,19 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# --- YENİ: 81 İL İÇİN DİNAMİK VERİTABANI OLUŞTURUCU ---
-TÜRKIYE_ILLERI = {
+# --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRASINA GÖRE) ---
+PLAKA_SIRALI_ILLER = [
+    "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
+    "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
+    "Diyarbakır", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari",
+    "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu", "Kayseri", "Kırklareli", "Kırşehir",
+    "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir",
+    "Niğde", "Ordu", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat",
+    "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak", "Aksaray", "Bayburt", "Karaman",
+    "Kırıkkale", "Batman", "Şırnak", "Bartın", "Ardahan", "Iğdır", "Yalova", "Karabük", "Kilis", "Osmaniye", "Düzce"
+]
+
+TÜRKIYE_ILLERI_KOORDINATLAR = {
     "Adana": [37.0000, 35.3213], "Adıyaman": [37.7648, 38.2786], "Afyonkarahisar": [38.7507, 30.5567],
     "Ağrı": [39.7191, 43.0503], "Amasya": [40.6499, 35.8353], "Ankara": [39.9334, 32.8597],
     "Antalya": [36.8969, 30.7133], "Artvin": [41.1828, 41.8183], "Aydın": [37.8444, 27.8458],
@@ -111,9 +122,9 @@ TÜRKIYE_ILLERI = {
     "Kilis": [36.7184, 37.1147], "Osmaniye": [37.0742, 36.2475], "Düzce": [40.8438, 31.1565]
 }
 
-# Şehirleri dinamik olarak oluştur
 CITIES = {}
-for sehir, coords in sorted(TÜRKIYE_ILLERI.items()):
+for sehir in PLAKA_SIRALI_ILLER:
+    coords = TÜRKIYE_ILLERI_KOORDINATLAR[sehir]
     CITIES[sehir] = {
         "center": coords,
         "institutions": [
@@ -124,25 +135,33 @@ for sehir, coords in sorted(TÜRKIYE_ILLERI.items()):
         ]
     }
 
-# Özelleştirilmiş Şehirlerin Üzerine Yazılması
-CITIES["Elazığ"]["institutions"] = [
-    {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
+# Özel Kurum Eklentileri
+CITIES["Elazığ"]["institutions"].extend([
     {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
-    {"name": "Adliye", "lat": 38.6705, "lon": 39.2215},
-    {"name": "Fırat Üniversitesi", "lat": 38.6756, "lon": 39.1970},
-    {"name": "İl Emniyet Müdürlüğü", "lat": 38.6710, "lon": 39.1840}
-]
+    {"name": "Fırat Üniversitesi", "lat": 38.6756, "lon": 39.1970}
+])
 CITIES["Ankara"]["institutions"].append({"name": "ODTÜ", "lat": 39.8914, "lon": 32.7846})
 CITIES["Konya"]["institutions"].append({"name": "Selçuk Üniversitesi", "lat": 38.0260, "lon": 32.5125})
 
 
-# --- 5. SIDEBAR (AUTH, ŞEHİR & FİLTRE) ---
+# --- 6. SIDEBAR (AUTH, ŞEHİR & FİLTRE) ---
 with st.sidebar:
     st.title("🏡 İşlemler")
     
-    secilen_sehir = st.selectbox("🏙️ Şehir Seçin:", list(CITIES.keys()), index=list(CITIES.keys()).index("Elazığ"))
-    aktif_merkez = CITIES[secilen_sehir]["center"]
-    aktif_kurumlar = CITIES[secilen_sehir]["institutions"]
+    # YENİ: Türkiye Geneli seçeneği ve Plaka Sıralaması
+    sehir_secenekleri = ["Türkiye Geneli"] + PLAKA_SIRALI_ILLER
+    secilen_sehir = st.selectbox("🏙️ Konum Seçin:", sehir_secenekleri, index=0)
+
+    # Seçime göre harita ayarları
+    if secilen_sehir == "Türkiye Geneli":
+        aktif_merkez = [39.0, 35.0] # Türkiye'nin ortası
+        harita_zoom = 6
+        # Tüm Türkiye'deki kurumları birleştir (haritada göstermek için)
+        aktif_kurumlar = [kurum for il_veri in CITIES.values() for kurum in il_veri["institutions"]]
+    else:
+        aktif_merkez = CITIES[secilen_sehir]["center"]
+        harita_zoom = 12
+        aktif_kurumlar = CITIES[secilen_sehir]["institutions"]
 
     max_fiyat, kurum_sec, max_mesafe = 50000, "Farketmez", 50.0
     oda_sec, esya_sec = "Farketmez", "Farketmez"
@@ -179,9 +198,9 @@ with st.sidebar:
                     if new_p_admin:
                         st.session_state.users[target]["sifre"] = new_p_admin
                         db.collection('users').document(target).update({"sifre": new_p_admin})
-                        st.success(f"Güncellendi.")
+                        st.success("Güncellendi.")
             else:
-                old_p, new_p = st.text_input("Eski Şifre", type="password"), st.text_input("Yeni Şifre", type="password")
+                old_p, new_p = text_input("Eski Şifre", type="password"), st.text_input("Yeni Şifre", type="password")
                 if st.button("Şifremi Kaydet"):
                     if old_p == st.session_state.users[st.session_state.current_user]["sifre"] and new_p:
                         st.session_state.users[st.session_state.current_user]["sifre"] = new_p
@@ -192,16 +211,25 @@ with st.sidebar:
             max_fiyat = st.slider("Maks. Bütçe", 0, 50000, 50000, step=500)
             oda_sec = st.selectbox("Oda", ["Farketmez", "1+0", "1+1", "2+1", "3+1", "4+1 ve üzeri"])
             esya_sec = st.radio("Eşya", ["Farketmez", "Eşyalı", "Boş"])
-            kurum_sec = st.selectbox("Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in aktif_kurumlar])
-            if kurum_sec != "Farketmez": max_mesafe = st.slider("Mesafe (km)", 0.5, 30.0, 5.0)
+            
+            # Türkiye Geneli seçiliyse yüzlerce kurumu filtreye dizmek sistemi yorar, o yüzden gizliyoruz
+            if secilen_sehir != "Türkiye Geneli":
+                kurum_sec = st.selectbox("Kuruma Yakınlık:", ["Farketmez"] + [i["name"] for i in aktif_kurumlar])
+                if kurum_sec != "Farketmez": max_mesafe = st.slider("Mesafe (km)", 0.5, 30.0, 5.0)
+            else:
+                st.info("💡 Kuruma yakınlık filtresi kullanmak için yukarıdan spesifik bir il seçiniz.")
+                kurum_sec = "Farketmez"
 
         if st.button("🚪 Çıkış Yap"):
             st.session_state.logged_in = False
             st.rerun()
 
 # --- FİLTRELEME MANTIĞI ---
-# Seçilen şehre sadece 100 km yakınlıktaki ilanları gösterir
-f_houses = [h for h in st.session_state.houses if calculate_distance(h["lat"], h["lon"], aktif_merkez[0], aktif_merkez[1]) <= 100]
+if secilen_sehir == "Türkiye Geneli":
+    f_houses = st.session_state.houses # Tüm evleri göster
+else:
+    # Sadece seçilen şehre 100 km yakınlıktaki evleri göster
+    f_houses = [h for h in st.session_state.houses if calculate_distance(h["lat"], h["lon"], aktif_merkez[0], aktif_merkez[1]) <= 100]
 
 f_houses = [h for h in f_houses if h["price"] <= max_fiyat]
 if oda_sec != "Farketmez": f_houses = [h for h in f_houses if h.get("rooms", "Belirtilmemiş") == oda_sec]
@@ -212,26 +240,31 @@ if kurum_sec != "Farketmez":
     inst = next(i for i in aktif_kurumlar if i["name"] == kurum_sec)
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
-# --- 6. ANA PANEL VE SEKME YÖNETİMİ ---
+# --- 7. ANA PANEL VE SEKME YÖNETİMİ ---
 tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 if st.session_state.user_role == "yonetici": tab_names.append("📊 Admin")
 
-if "tab_index" not in st.session_state:
-    st.session_state.tab_index = 0
-if st.session_state.tab_index >= len(tab_names):
-    st.session_state.tab_index = 0
+if "tab_index" not in st.session_state: st.session_state.tab_index = 0
+if st.session_state.tab_index >= len(tab_names): st.session_state.tab_index = 0
 
 aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, horizontal=True, label_visibility="collapsed")
 st.session_state.tab_index = tab_names.index(aktif_sekme)
 
 if aktif_sekme == "📍 Harita":
-    m = folium.Map(location=aktif_merkez, zoom_start=12, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
-    for i in aktif_kurumlar: folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
+    m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
+    
+    # Tüm kurumları haritaya bas
+    for i in aktif_kurumlar: 
+        folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
     
     if st.session_state.logged_in:
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
-            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in aktif_kurumlar])
+            # Akıllı Mesafe Hesaplayıcı: Eve en yakın 5 kurumu bulup listeler
+            # (Eğer Türkiye Genelindeyse yüzlerce kurumu listelememesi için)
+            yakindaki_kurumlar = sorted(aktif_kurumlar, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
+            dist_items = "".join([f"<li style='margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
+            
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
@@ -243,7 +276,7 @@ if aktif_sekme == "📍 Harita":
                 <span style='color:#27ae60; font-size:16px; font-weight:bold;'>{h['price']} TL</span><br>
                 <hr style='margin:8px 0;'>
                 <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:#4285F4; color:white; text-decoration:none; padding:5px; border-radius:5px; font-size:12px;">📍 Yol Tarifi Al</a>
-                <p style='font-size:11px; margin:8px 0 4px 0;'><b>Kurumlara Uzaklık:</b></p>
+                <p style='font-size:11px; margin:8px 0 4px 0;'><b>En Yakın Kurumlar:</b></p>
                 <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background-color: #fcfcfc;'>
                     <ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>
                 </div>
@@ -299,7 +332,7 @@ elif aktif_sekme == "🏠 İlan Ekle":
 elif aktif_sekme == "📋 Tüm İlanlar":
     if not st.session_state.logged_in: st.warning("Giriş yapın.")
     else:
-        st.info(f"📍 Şu an sadece **{secilen_sehir}** çevresindeki ilanlar listeleniyor.")
+        st.info(f"📍 Şu an **{secilen_sehir}** için sonuçlar listeleniyor.")
         for h in f_houses:
             esya_durumu = "Eşyalı" if h.get("furnished", False) else "Boş"
             oda_durumu = h.get("rooms", "Belirtilmemiş")
