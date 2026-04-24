@@ -19,40 +19,39 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- YENİ: AYDINLIK BUZLU CAM (LIGHT GLASSMORPHISM) TASARIM BLOĞU ---
+# --- YENİ: SADE ŞEHİR MANZARASI VE KOYU METİN TASARIM BLOĞU ---
 st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
-        /* Ana Arka Plan Görseli */
+        /* Ana Arka Plan Görseli (Sade, aydınlık şehir manzarası) */
         .stApp {
-            background-image: url("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2075&auto=format&fit=crop");
+            background-image: url("https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2144&auto=format&fit=crop");
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            color: #2c3e50 !important; /* Tüm metinleri şık bir koyu lacivert/gri yapıyoruz */
         }
         
-        /* GÜNCELLENDİ: Arka planı aydınlatan ve yazıları okunaklı kılan BEYAZ cam katmanı */
+        /* Arka planı aydınlatan ve yazıları okunaklı kılan BEYAZ cam katmanı */
         .stApp::before {
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(255, 255, 255, 0.75); /* %75 Beyazlık */
-            backdrop-filter: blur(8px); /* Daha pürüzsüz bir bulanıklık */
+            background-color: rgba(255, 255, 255, 0.80); /* %80 Beyazlık */
+            backdrop-filter: blur(8px); /* Hafif bulanıklık */
             z-index: -1;
+        }
+
+        /* UYGULAMADAKİ BÜTÜN YAZILARI KOYU RENK YAPMA KURALI */
+        p, h1, h2, h3, h4, h5, h6, span, label, li, div[data-testid="stMarkdownContainer"] {
+            color: #1a252f !important;
         }
 
         /* Yan Menü (Sidebar) Aydınlık Cam Efekti */
         [data-testid="stSidebar"] {
-            background-color: rgba(255, 255, 255, 0.65) !important;
+            background-color: rgba(255, 255, 255, 0.70) !important;
             backdrop-filter: blur(15px) !important;
             border-right: 1px solid rgba(255,255,255,0.8);
-        }
-        
-        /* Yan menüdeki tüm metinlerin rengi koyu yapıldı */
-        [data-testid="stSidebar"] * {
-            color: #2c3e50 !important;
         }
 
         /* Sekme Menüsü (Radyo Butonları) */
@@ -66,22 +65,27 @@ st.markdown("""
             border: 1px solid rgba(255,255,255,0.8);
             margin-bottom: 20px;
         }
-        div[role="radiogroup"] label {
+        /* Sekme isimlerini (Harita, İlan Ekle vs) zorla koyu ve kalın yap */
+        div[role="radiogroup"] label, div[role="radiogroup"] p {
             color: #1a252f !important;
             font-weight: 800 !important;
         }
 
-        /* Modern, Kalın ve Belirgin Butonlar (Yeşil Tonları Korundu) */
+        /* Modern Butonlar (Yeşil zemin, BEYAZ yazı) */
         div.stButton > button, div.stFormSubmitButton > button {
             background: linear-gradient(135deg, #059669 0%, #27ae60 100%) !important;
-            color: white !important;
             border: none !important;
             border-radius: 12px !important;
             padding: 10px 24px !important;
-            font-weight: 700 !important; 
-            font-size: 16px !important; 
             box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important; 
             transition: all 0.3s ease !important;
+        }
+        /* Buton içindeki metinler beyaz kalsın ki yeşilin üstünde okunsun */
+        div.stButton > button p, div.stButton > button span, 
+        div.stFormSubmitButton > button p, div.stFormSubmitButton > button span {
+            color: white !important;
+            font-weight: 700 !important; 
+            font-size: 16px !important; 
         }
         div.stButton > button:hover, div.stFormSubmitButton > button:hover {
             transform: translateY(-2px) !important;
@@ -96,13 +100,6 @@ st.markdown("""
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.9);
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            color: #2c3e50 !important;
-        }
-        
-        /* Form içindeki metinleri zorla koyulaştır */
-        div[data-testid="stForm"] label, div[data-testid="stExpander"] label {
-            color: #2c3e50 !important;
-            font-weight: 600;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -151,7 +148,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v17").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v18").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -230,7 +227,6 @@ with st.sidebar:
     st.title("🏡 İşlemler")
     
     st.markdown("📍 **Mevcut Konumunuz**")
-    # GPS Butonu
     user_location = streamlit_geolocation()
     
     sehir_secenekleri = ["Türkiye Geneli"] + PLAKA_SIRALI_ILLER
@@ -359,7 +355,6 @@ if aktif_sekme == "📍 Harita":
         for i in aktif_kurumlar: 
             folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
-    # GÜNCELLEME: Konum İkonu daha şık bir mavi hedef/radar (crosshairs) tasarımına dönüştürüldü
     if secilen_sehir == "📍 Bulunduğum Konum":
         folium.Marker(aktif_merkez, popup="Sizin Konumunuz", icon=folium.Icon(color="cadetblue", icon="crosshairs", prefix="fa")).add_to(m)
     
@@ -367,21 +362,21 @@ if aktif_sekme == "📍 Harita":
         marker_cluster = MarkerCluster().add_to(m)
         for h in f_houses:
             yakindaki_kurumlar = sorted(TUM_KURUMLAR, key=lambda x: calculate_distance(h['lat'], h['lon'], x['lat'], x['lon']))[:5]
-            dist_items = "".join([f"<li style='color:#2c3e50; margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
+            dist_items = "".join([f"<li style='color:#1a252f; margin-bottom:2px;'><b>{i['name']}:</b> {calculate_distance(h['lat'], h['lon'], i['lat'], i['lon'])} km</li>" for i in yakindaki_kurumlar])
             
             img_b64 = h.get("image", "")
             img_tag = f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; border-radius:8px; margin-bottom:8px;">' if img_b64 else ""
             nav_link = f"https://www.google.com/maps/dir/?api=1&destination={h['lat']},{h['lon']}"
             
             popup_html = f"""
-            <div style='width:240px; font-family: sans-serif; color:#2c3e50;'>
+            <div style='width:240px; font-family: sans-serif; color:#1a252f;'>
                 {img_tag}
                 <b style='font-size:14px;'>{h['title']}</b><br>
                 <span style='color:#27ae60; font-size:16px; font-weight:bold;'>{h['price']} TL</span><br>
-                <hr style='margin:8px 0; border-color:#eee;'>
+                <hr style='margin:8px 0; border-color:#ccc;'>
                 <a href="{nav_link}" target="_blank" style="display:block; text-align:center; background:linear-gradient(135deg, #059669 0%, #27ae60 100%); color:white; text-decoration:none; padding:8px; border-radius:8px; font-size:12px; font-weight:bold;">📍 Yol Tarifi Al</a>
-                <p style='font-size:11px; margin:8px 0 4px 0; color:#34495e;'><b>En Yakın Kurumlar:</b></p>
-                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; padding: 4px; background-color: #fdfdfd;'>
+                <p style='font-size:11px; margin:8px 0 4px 0; color:#1a252f;'><b>En Yakın Kurumlar:</b></p>
+                <div style='max-height: 90px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 4px; background-color: #fdfdfd;'>
                     <ul style='margin:0; padding-left:15px; font-size:11px;'>{dist_items}</ul>
                 </div>
             </div>"""
