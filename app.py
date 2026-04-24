@@ -70,7 +70,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v6").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v7").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -80,44 +80,67 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-CITIES = {
-    "Elazığ": {
-        "center": [38.6748, 39.2225],
+# --- YENİ: 81 İL İÇİN DİNAMİK VERİTABANI OLUŞTURUCU ---
+TÜRKIYE_ILLERI = {
+    "Adana": [37.0000, 35.3213], "Adıyaman": [37.7648, 38.2786], "Afyonkarahisar": [38.7507, 30.5567],
+    "Ağrı": [39.7191, 43.0503], "Amasya": [40.6499, 35.8353], "Ankara": [39.9334, 32.8597],
+    "Antalya": [36.8969, 30.7133], "Artvin": [41.1828, 41.8183], "Aydın": [37.8444, 27.8458],
+    "Balıkesir": [39.6484, 27.8826], "Bilecik": [40.1451, 29.9798], "Bingöl": [38.8847, 40.4939],
+    "Bitlis": [38.4006, 42.1095], "Bolu": [40.7392, 31.6111], "Burdur": [37.7204, 30.2805],
+    "Bursa": [40.1824, 29.0665], "Çanakkale": [40.1553, 26.4127], "Çankırı": [40.6013, 33.6134],
+    "Çorum": [40.5506, 34.9556], "Denizli": [37.7765, 29.0864], "Diyarbakır": [37.9144, 40.2306],
+    "Edirne": [41.6771, 26.5557], "Elazığ": [38.6748, 39.2225], "Erzincan": [39.7500, 39.5000],
+    "Erzurum": [39.9043, 41.2679], "Eskişehir": [39.7767, 30.5206], "Gaziantep": [37.0662, 37.3833],
+    "Giresun": [40.9128, 38.3895], "Gümüşhane": [40.4608, 39.4816], "Hakkari": [37.5744, 43.7408],
+    "Hatay": [36.2000, 36.1667], "Isparta": [37.7648, 30.5566], "Mersin": [36.8000, 34.6333],
+    "İstanbul": [41.0082, 28.9784], "İzmir": [38.4192, 27.1287], "Kars": [40.6013, 43.0975],
+    "Kastamonu": [41.3766, 33.7765], "Kayseri": [38.7312, 35.4787], "Kırklareli": [41.7333, 27.2167],
+    "Kırşehir": [39.1425, 34.1709], "Kocaeli": [40.8533, 29.8815], "Konya": [37.8746, 32.4931],
+    "Kütahya": [39.4167, 29.9833], "Malatya": [38.3552, 38.3095], "Manisa": [38.6191, 27.4289],
+    "Kahramanmaraş": [37.5858, 36.9371], "Mardin": [37.3122, 40.7339], "Muğla": [37.2153, 28.3636],
+    "Muş": [38.7366, 41.4938], "Nevşehir": [38.6244, 34.7144], "Niğde": [37.9667, 34.6833],
+    "Ordu": [40.9839, 37.8764], "Rize": [41.0201, 40.5234], "Sakarya": [40.7569, 30.3783],
+    "Samsun": [41.2867, 36.3300], "Siirt": [37.9333, 41.9500], "Sinop": [42.0231, 35.1531],
+    "Sivas": [39.7477, 37.0179], "Tekirdağ": [40.9833, 27.5167], "Tokat": [40.3167, 36.5500],
+    "Trabzon": [41.0015, 39.7178], "Tunceli": [39.1079, 39.5401], "Şanlıurfa": [37.1500, 38.8000],
+    "Uşak": [38.6823, 29.4082], "Van": [38.4891, 43.3889], "Yozgat": [39.8181, 34.8147],
+    "Zonguldak": [41.4564, 31.7762], "Aksaray": [38.3687, 34.0370], "Bayburt": [40.2552, 40.2249],
+    "Karaman": [37.1759, 33.2287], "Kırıkkale": [39.8468, 33.5153], "Batman": [37.8812, 41.1351],
+    "Şırnak": [37.5164, 42.4611], "Bartın": [41.6344, 32.3375], "Ardahan": [41.1105, 42.7022],
+    "Iğdır": [39.9237, 44.0450], "Yalova": [40.6500, 29.2667], "Karabük": [41.2061, 32.6226],
+    "Kilis": [36.7184, 37.1147], "Osmaniye": [37.0742, 36.2475], "Düzce": [40.8438, 31.1565]
+}
+
+# Şehirleri dinamik olarak oluştur
+CITIES = {}
+for sehir, coords in sorted(TÜRKIYE_ILLERI.items()):
+    CITIES[sehir] = {
+        "center": coords,
         "institutions": [
-            {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
-            {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
-            {"name": "Adliye", "lat": 38.6705, "lon": 39.2215},
-            {"name": "Fırat Üniversitesi", "lat": 38.6756, "lon": 39.1970},
-            {"name": "İl Emniyet Müdürlüğü", "lat": 38.6710, "lon": 39.1840}
-        ]
-    },
-    "Konya": {
-        "center": [37.8746, 32.4931],
-        "institutions": [
-            {"name": "Konya Valiliği", "lat": 37.8715, "lon": 32.4846},
-            {"name": "Şehir Hastanesi", "lat": 37.8580, "lon": 32.5350},
-            {"name": "Konya Adliyesi", "lat": 37.8785, "lon": 32.5280},
-            {"name": "Selçuk Üniversitesi", "lat": 38.0260, "lon": 32.5125},
-            {"name": "İl Emniyet Müdürlüğü", "lat": 37.8860, "lon": 32.4900}
-        ]
-    },
-    "Ankara": {
-        "center": [39.9334, 32.8597],
-        "institutions": [
-            {"name": "Ankara Valiliği", "lat": 39.9410, "lon": 32.8545},
-            {"name": "Bilkent Şehir Hastanesi", "lat": 39.8955, "lon": 32.7620},
-            {"name": "Ankara Adliyesi", "lat": 39.9300, "lon": 32.8500},
-            {"name": "ODTÜ", "lat": 39.8914, "lon": 32.7846},
-            {"name": "Emniyet Genel Müd.", "lat": 39.9145, "lon": 32.8505}
+            {"name": f"{sehir} Valiliği", "lat": coords[0] + 0.003, "lon": coords[1] + 0.003},
+            {"name": f"{sehir} Adliyesi", "lat": coords[0] - 0.003, "lon": coords[1] - 0.003},
+            {"name": f"İl Emniyet Müdürlüğü", "lat": coords[0] + 0.004, "lon": coords[1] - 0.002},
+            {"name": f"{sehir} Devlet Hastanesi", "lat": coords[0] - 0.004, "lon": coords[1] + 0.002},
         ]
     }
-}
+
+# Özelleştirilmiş Şehirlerin Üzerine Yazılması
+CITIES["Elazığ"]["institutions"] = [
+    {"name": "Valilik", "lat": 38.6810, "lon": 39.2264},
+    {"name": "Fethi Sekin Şehir Hastanesi", "lat": 38.6738, "lon": 39.1963},
+    {"name": "Adliye", "lat": 38.6705, "lon": 39.2215},
+    {"name": "Fırat Üniversitesi", "lat": 38.6756, "lon": 39.1970},
+    {"name": "İl Emniyet Müdürlüğü", "lat": 38.6710, "lon": 39.1840}
+]
+CITIES["Ankara"]["institutions"].append({"name": "ODTÜ", "lat": 39.8914, "lon": 32.7846})
+CITIES["Konya"]["institutions"].append({"name": "Selçuk Üniversitesi", "lat": 38.0260, "lon": 32.5125})
+
 
 # --- 5. SIDEBAR (AUTH, ŞEHİR & FİLTRE) ---
 with st.sidebar:
     st.title("🏡 İşlemler")
     
-    secilen_sehir = st.selectbox("🏙️ Şehir Seçin:", list(CITIES.keys()))
+    secilen_sehir = st.selectbox("🏙️ Şehir Seçin:", list(CITIES.keys()), index=list(CITIES.keys()).index("Elazığ"))
     aktif_merkez = CITIES[secilen_sehir]["center"]
     aktif_kurumlar = CITIES[secilen_sehir]["institutions"]
 
@@ -177,7 +200,9 @@ with st.sidebar:
             st.rerun()
 
 # --- FİLTRELEME MANTIĞI ---
+# Seçilen şehre sadece 100 km yakınlıktaki ilanları gösterir
 f_houses = [h for h in st.session_state.houses if calculate_distance(h["lat"], h["lon"], aktif_merkez[0], aktif_merkez[1]) <= 100]
+
 f_houses = [h for h in f_houses if h["price"] <= max_fiyat]
 if oda_sec != "Farketmez": f_houses = [h for h in f_houses if h.get("rooms", "Belirtilmemiş") == oda_sec]
 if esya_sec != "Farketmez":
@@ -187,14 +212,12 @@ if kurum_sec != "Farketmez":
     inst = next(i for i in aktif_kurumlar if i["name"] == kurum_sec)
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
-# --- 6. ANA PANEL (HATA GİDERİLEN SEKME YÖNETİMİ) ---
+# --- 6. ANA PANEL VE SEKME YÖNETİMİ ---
 tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 if st.session_state.user_role == "yonetici": tab_names.append("📊 Admin")
 
-# Güvenli Sekme İndeksi Yönetimi
 if "tab_index" not in st.session_state:
     st.session_state.tab_index = 0
-
 if st.session_state.tab_index >= len(tab_names):
     st.session_state.tab_index = 0
 
@@ -202,7 +225,7 @@ aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, hor
 st.session_state.tab_index = tab_names.index(aktif_sekme)
 
 if aktif_sekme == "📍 Harita":
-    m = folium.Map(location=aktif_merkez, zoom_start=13, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
+    m = folium.Map(location=aktif_merkez, zoom_start=12, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     for i in aktif_kurumlar: folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="briefcase", prefix='fa')).add_to(m)
     
     if st.session_state.logged_in:
@@ -230,7 +253,6 @@ if aktif_sekme == "📍 Harita":
     
     m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
     
-    # GÜVENLİ YÖNLENDİRME (HATA BURADA ÇÖZÜLDÜ)
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
         if st.session_state.get("prev_click") != click_data:
@@ -314,7 +336,7 @@ elif aktif_sekme == "⭐ Favoriler":
     if st.session_state.logged_in:
         f_l = st.session_state.users[st.session_state.current_user].get("favorites", [])
         for h in [x for x in st.session_state.houses if x["id"] in f_l]: 
-            st.write(f"⭐ **{h['title']}** - {h['price']} TL")
+            st.write(f"⭐ **{h['title']}** - {h['price']} TL (Adres: {h['address']})")
 
 elif aktif_sekme == "📩 Mesajlar":
     if st.session_state.logged_in:
