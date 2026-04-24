@@ -22,7 +22,6 @@ st.markdown("""
     <style>
         iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         .main { background-color: #f8f9fa; }
-        /* Yatay menüyü sekmelere benzetmek için ufak bir CSS */
         div[role="radiogroup"] { flex-direction: row; gap: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
     </style>
 """, unsafe_allow_html=True)
@@ -81,7 +80,6 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# YENİ: ŞEHİR VE KURUM VERİTABANI
 CITIES = {
     "Elazığ": {
         "center": [38.6748, 39.2225],
@@ -119,7 +117,6 @@ CITIES = {
 with st.sidebar:
     st.title("🏡 İşlemler")
     
-    # YENİ: ŞEHİR SEÇİMİ
     secilen_sehir = st.selectbox("🏙️ Şehir Seçin:", list(CITIES.keys()))
     aktif_merkez = CITIES[secilen_sehir]["center"]
     aktif_kurumlar = CITIES[secilen_sehir]["institutions"]
@@ -180,10 +177,7 @@ with st.sidebar:
             st.rerun()
 
 # --- FİLTRELEME MANTIĞI ---
-# 1. Aşama: Sadece seçilen şehre 100 km yakınlıktaki evleri al (Diğer şehirleri gizle)
 f_houses = [h for h in st.session_state.houses if calculate_distance(h["lat"], h["lon"], aktif_merkez[0], aktif_merkez[1]) <= 100]
-
-# 2. Aşama: Kullanıcı filtrelerini uygula
 f_houses = [h for h in f_houses if h["price"] <= max_fiyat]
 if oda_sec != "Farketmez": f_houses = [h for h in f_houses if h.get("rooms", "Belirtilmemiş") == oda_sec]
 if esya_sec != "Farketmez":
@@ -193,16 +187,19 @@ if kurum_sec != "Farketmez":
     inst = next(i for i in aktif_kurumlar if i["name"] == kurum_sec)
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
-# --- 6. ANA PANEL (YÖNLENDİREBİLİR YATAY MENÜ) ---
+# --- 6. ANA PANEL (HATA GİDERİLEN SEKME YÖNETİMİ) ---
 tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 if st.session_state.user_role == "yonetici": tab_names.append("📊 Admin")
 
-# Otomatik yönlendirme için aktif sekmeyi session_state'de tutuyoruz
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = tab_names[0]
+# Güvenli Sekme İndeksi Yönetimi
+if "tab_index" not in st.session_state:
+    st.session_state.tab_index = 0
 
-# Sekme görünümünde radyo butonları
-aktif_sekme = st.radio("Menü", tab_names, horizontal=True, label_visibility="collapsed", key="active_tab")
+if st.session_state.tab_index >= len(tab_names):
+    st.session_state.tab_index = 0
+
+aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, horizontal=True, label_visibility="collapsed")
+st.session_state.tab_index = tab_names.index(aktif_sekme)
 
 if aktif_sekme == "📍 Harita":
     m = folium.Map(location=aktif_merkez, zoom_start=13, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
@@ -233,18 +230,17 @@ if aktif_sekme == "📍 Harita":
     
     m_res = st_folium(m, use_container_width=True, height=550, returned_objects=["last_clicked"])
     
-    # YENİ: TIKLAMA YAKALAYICI VE YÖNLENDİRİCİ
+    # GÜVENLİ YÖNLENDİRME (HATA BURADA ÇÖZÜLDÜ)
     if m_res and m_res.get("last_clicked"):
         click_data = m_res["last_clicked"]
         if st.session_state.get("prev_click") != click_data:
             st.session_state.prev_click = click_data
-            st.session_state.active_tab = "🏠 İlan Ekle" # Otomatik Sekme Değiştir
+            st.session_state.tab_index = tab_names.index("🏠 İlan Ekle")
             st.rerun()
 
 elif aktif_sekme == "🏠 İlan Ekle":
     if not st.session_state.logged_in: st.warning("Giriş yapınız.")
     else:
-        # Varsayılan olarak şehrin merkezini al, haritaya tıklandıysa tıklanan yeri al
         l_n, o_n, a_n = aktif_merkez[0], aktif_merkez[1], ""
         if st.session_state.get("prev_click"):
             l_n, o_n = st.session_state.prev_click["lat"], st.session_state.prev_click["lng"]
@@ -273,9 +269,9 @@ elif aktif_sekme == "🏠 İlan Ekle":
                     h_data = {"id": h_id, "title": ti, "price": pr, "rooms": rm, "furnished": fr, "address": ad, "comment": co, "lat": l_n, "lon": o_n, "image": b64, "owner": st.session_state.current_user}
                     db.collection('houses').document(h_id).set(h_data)
                     st.session_state.houses.append(h_data)
-                    st.session_state.prev_click = None # Sıfırla
+                    st.session_state.prev_click = None 
                     st.success("İlan kaydedildi!")
-                    st.session_state.active_tab = "📋 Tüm İlanlar" # Başarılıysa listeye at
+                    st.session_state.tab_index = tab_names.index("📋 Tüm İlanlar")
                     st.rerun()
 
 elif aktif_sekme == "📋 Tüm İlanlar":
