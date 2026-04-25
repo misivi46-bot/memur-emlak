@@ -110,7 +110,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v27").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v28").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -290,6 +290,7 @@ with st.sidebar:
                             st.rerun()
                         else: st.error("Hatalı kullanıcı adı veya şifre!")
                 
+                # Şifremi Unuttum Butonu giriş formunun altında
                 if st.button("Şifremi Unuttum"):
                     st.session_state.forgot_password_mode = True
                     st.rerun()
@@ -417,8 +418,8 @@ if kurum_sec != "Farketmez":
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
 # --- 7. ANA PANEL VE SEKME YÖNETİMİ ---
-# YENİ: En başa "Hakkında" sekmesi eklendi
-tab_names = ["ℹ️ Hakkında", "📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
+# YENİ: "Hakkında" sekmesi standart sekmelerin EN SONUNA eklendi.
+tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar", "ℹ️ Hakkında"]
 
 if st.session_state.user_role == "yonetici": 
     tab_names.append("📊 Admin Paneli")
@@ -435,27 +436,10 @@ if tab_names.index(aktif_sekme) != st.session_state.tab_index:
     st.session_state.tab_index = tab_names.index(aktif_sekme)
     st.rerun()
 
-# YENİ: Uygulama Hakkında Bölümü
-if aktif_sekme == "ℹ️ Hakkında":
-    st.title("🏢 Memur Emlak & Tayin Portalı")
-    st.markdown("---")
-    st.markdown("""
-    **Memurların atama ve tayin dönemlerinde kiralık ev bulmalarını kolaylaştırmak amacıyla tasarlanmıştır.** Yeni bir şehre taşınma süreci her zaman stresli bir süreçtir. Bu platform; tayini çıkan, yeni bir düzene adım atan ve güvenilir bir yuvaya ihtiyaç duyan memurlar ile, tayin sebebiyle evini devreden/kiralayan kişileri güvenli bir çatı altında buluşturur.
-
-    ### ✨ Uygulamanın Başlıca Özellikleri:
-    * **📍 Akıllı Harita Sistemi:** Evleri sadece bir liste olarak değil, doğrudan harita üzerinde konumlarıyla inceleyebilirsiniz.
-    * **🏢 Kurumlara Yakınlık:** İlgilendiğiniz evin Valilik, Adliye, Hastane veya Emniyet Müdürlüğü gibi resmi kurumlara tam olarak kaç kilometre uzaklıkta olduğunu harita üzerinden otomatik hesaplar.
-    * **💬 Güvenli İletişim:** İlan sahipleriyle sistem üzerinden doğrudan ve güvenle mesajlaşabilirsiniz.
-    * **⭐ Favori İlanlar:** İlgilendiğiniz evleri favorilerinize ekleyerek daha sonra tek tıkla kolayca ulaşabilirsiniz.
-    * **📍 GPS Destekli Arama:** "Bulunduğum Konum" özelliği ile etrafınızdaki müsait evleri ve kurumları anında harita üzerinde listeleyebilirsiniz.
-    
-    *Bu platform sayesinde tayin dönemlerindeki ev arayış stresini en aza indiriyor, "yeni eviniz, yeni şehrinizde sizi bekliyor" diyoruz.*
-    """)
-
-elif aktif_sekme == "📍 Harita":
+if aktif_sekme == "📍 Harita":
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
-    # Bütün kurumlar haritaya basılır
+    # Bütün kurumlar her zaman ekranda basılır
     for i in aktif_kurumlar: 
         folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
@@ -588,6 +572,23 @@ elif aktif_sekme == "📩 Mesajlar":
         for m in my_m:
             with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
                 st.write(f"**{m['house']}** | {m['from']} ➔ {m['to']}\n{m['text']}")
+
+# YENİ: Hakkında Sayfası İşlevleri
+elif aktif_sekme == "ℹ️ Hakkında":
+    st.title("🏢 Memur Emlak & Tayin Portalı")
+    st.markdown("---")
+    st.markdown("""
+    **Memurların atama ve tayin dönemlerinde kiralık ev bulmalarını kolaylaştırmak amacıyla tasarlanmıştır.** Yeni bir şehre taşınma süreci her zaman stresli bir süreçtir. Bu platform; tayini çıkan, yeni bir düzene adım atan ve güvenilir bir yuvaya ihtiyaç duyan memurlar ile, tayin sebebiyle evini devreden/kiralayan kişileri güvenli bir çatı altında buluşturur.
+
+    ### ✨ Uygulamanın Başlıca Özellikleri:
+    * **📍 Akıllı Harita Sistemi:** Evleri sadece bir liste olarak değil, doğrudan harita üzerinde konumlarıyla inceleyebilirsiniz.
+    * **🏢 Kurumlara Yakınlık:** İlgilendiğiniz evin Valilik, Adliye, Hastane veya Emniyet Müdürlüğü gibi resmi kurumlara tam olarak kaç kilometre uzaklıkta olduğunu harita üzerinden otomatik hesaplar.
+    * **💬 Güvenli İletişim:** İlan sahipleriyle sistem üzerinden doğrudan ve güvenle mesajlaşabilirsiniz.
+    * **⭐ Favori İlanlar:** İlgilendiğiniz evleri favorilerinize ekleyerek daha sonra tek tıkla kolayca ulaşabilirsiniz.
+    * **📍 GPS Destekli Arama:** "Bulunduğum Konum" özelliği ile etrafınızdaki müsait evleri ve kurumları anında harita üzerinde listeleyebilirsiniz.
+    
+    *Bu platform sayesinde tayin dönemlerindeki ev arayış stresini en aza indiriyor, "yeni eviniz, yeni şehrinizde sizi bekliyor" diyoruz.*
+    """)
 
 elif aktif_sekme == "📊 Admin Paneli":
     if st.session_state.user_role == "yonetici":
