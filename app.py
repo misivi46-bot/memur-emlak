@@ -13,7 +13,7 @@ from google.cloud import firestore
 from PIL import Image
 import io
 from streamlit_geolocation import streamlit_geolocation
-import streamlit.components.v1 as components # YENİ: Animasyonu kesin çalıştıran bileşen
+import streamlit.components.v1 as components 
 
 # --- 1. SAYFA AYARLARI VE MOBİL DESTEK (PWA) ---
 st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", page_icon="🏢")
@@ -142,7 +142,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v33").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v34").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -260,7 +260,6 @@ with st.sidebar:
     oda_sec, esya_sec = "Farketmez", "Farketmez"
 
     if not st.session_state.logged_in:
-        # Şifremi Unuttum Modu
         if st.session_state.get("forgot_password_mode", False):
             st.markdown("### 🔑 Şifremi Unuttum")
             
@@ -305,7 +304,6 @@ with st.sidebar:
                 st.session_state.reset_step = 1
                 st.rerun()
 
-        # Normal Giriş / Kayıt Modu
         else:
             auth = st.radio("Hesap İşlemleri:", ["Giriş Yap", "Üye Ol"], horizontal=True)
             
@@ -520,7 +518,7 @@ if aktif_sekme == "📍 Harita":
             st.session_state.tab_index = tab_names.index("🏠 İlan Ekle")
             st.rerun()
 
-    # --- ÇÖZÜM: HARİTA ALTI GÖMÜLÜ TAŞINMA ANİMASYONU (st.components.v1.html İLE!) ---
+    # --- DÜZELTME: KAMYON YÖNÜ TERSİNE ÇEVRİLDİ ---
     st.markdown("---")
     
     animasyon_kodu = """
@@ -542,12 +540,15 @@ if aktif_sekme == "📍 Harita":
         .box { position: absolute; top: -15px; right: -10px; font-size: 25px; animation: loadunload 10s infinite; }
         
         @keyframes cloudMove { from { left: -10%; } to { left: 110%; } }
+        
+        /* DÜZELTME: Sola bakan standart emojiyi, sağa giderken (scaleX(-1) ile) sağa çeviriyoruz */
         @keyframes drive {
-            0%, 15% { left: 18%; transform: scaleX(1); }
-            30%, 65% { left: 70%; transform: scaleX(1); }
-            70%, 85% { left: 70%; transform: scaleX(-1); }
-            100% { left: 18%; transform: scaleX(-1); }
+            0%, 15% { left: 18%; transform: scaleX(-1); }
+            30%, 65% { left: 70%; transform: scaleX(-1); }
+            70%, 85% { left: 70%; transform: scaleX(1); }
+            100% { left: 18%; transform: scaleX(1); }
         }
+        
         @keyframes loadunload {
             0% { opacity: 0; transform: translateY(-30px); }
             5%, 15% { opacity: 1; transform: translateY(0); }
@@ -576,10 +577,8 @@ if aktif_sekme == "📍 Harita":
     </html>
     """
     
-    # Animasyonu güvenli şekilde render ediyoruz
     components.html(animasyon_kodu, height=210)
 
-    # Slogan ve Açıklama Metni
     st.markdown("""
         <div class='slogan-text'>"Tayininiz Çıktıysa Dert Etmeyin; Yeni Eviniz, Yeni Şehrinizde Sizi Bekliyor!"</div>
         <div class='slogan-sub'>Atama dönemlerinde kiralık ev bulmayı kolaylaştıran, taşınan ve ev arayan memurları güvenle buluşturan platform.</div>
