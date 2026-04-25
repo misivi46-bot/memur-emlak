@@ -12,9 +12,8 @@ from google.oauth2 import service_account
 from google.cloud import firestore
 from PIL import Image
 import io
-import requests
 from streamlit_geolocation import streamlit_geolocation
-from streamlit_lottie import st_lottie
+import streamlit.components.v1 as components # YENİ: Animasyon için dahili Streamlit aracı
 
 # --- 1. SAYFA AYARLARI VE MOBİL DESTEK (PWA) ---
 st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", page_icon="🏢")
@@ -22,7 +21,7 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tasarım Temizlendi) ---
+# --- SADECE ZORUNLU TEKNİK DÜZELTMELER ---
 st.markdown("""
     <style>
         /* Harita Çerçevesi Düzeltmesi */
@@ -105,7 +104,7 @@ def load_data():
     st.session_state.houses = [doc.to_dict() for doc in db.collection('houses').stream()]
     st.session_state.messages = [doc.to_dict() for doc in db.collection('messages').stream()]
 
-    # YENİ: Ziyaretçi Sayacı İşlemleri (Firebase üzerinden)
+    # Ziyaretçi Sayacı İşlemleri
     stats_ref = db.collection('site_stats').document('visitors')
     stats_doc = stats_ref.get()
     
@@ -137,7 +136,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v30").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v31").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -146,13 +145,6 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     dlat, dlon = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
-
-# YENİ: Lottie Animasyonu Yükleyici
-def load_lottieurl(url: str):
-    r = requests.get(url)
-    if r.status_code != 200:
-        return None
-    return r.json()
 
 # --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRALI) ---
 PLAKA_SIRALI_ILLER = [
@@ -431,9 +423,9 @@ with st.sidebar:
                 st.info("💡 Kurum filtresi için yukarıdan spesifik bir il seçin.")
                 kurum_sec = "Farketmez"
 
-        # YENİ: Ziyaretçi Sayacı Gösterimi (Sidebar'ın en altı)
+        # Ziyaretçi Sayacı
         st.markdown("---")
-        st.markdown(f"<p style='text-align:center; font-size:12px; color:gray;'>👁️ Toplam Ziyaretçi: <b>{st.session_state.visitor_count}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; font-size:13px; color:gray;'>👁️ Toplam Ziyaretçi: <b>{st.session_state.visitor_count}</b></p>", unsafe_allow_html=True)
 
         if st.button("🚪 Çıkış Yap"):
             st.session_state.logged_in = False
@@ -523,15 +515,18 @@ if aktif_sekme == "📍 Harita":
             st.session_state.tab_index = tab_names.index("🏠 İlan Ekle")
             st.rerun()
 
-    # --- YENİ: HARİTA ALTINDAKİ TAŞINMA ANİMASYONU VE SLOGAN ---
+    # --- YENİ: EKLENTİSİZ ANİMASYON VE SLOGAN ---
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Nakliye / Taşınma Kamyonu Animasyonu (LottieFiles)
-        lottie_moving = load_lottieurl("https://assets10.lottiefiles.com/packages/lf20_t2bmt8yo.json")
-        if lottie_moving:
-            st_lottie(lottie_moving, height=200, key="moving_truck")
-        
+        # Harici kütüphane yerine Streamlit'in yerleşik HTML bileşenini kullandık
+        components.html(
+            """
+            <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+            <lottie-player src="https://assets10.lottiefiles.com/packages/lf20_t2bmt8yo.json"  background="transparent"  speed="1"  style="width: 100%; height: 200px;"  loop  autoplay></lottie-player>
+            """,
+            height=210,
+        )
         st.markdown("<p class='slogan-text'>\"Tayininiz Çıktıysa Dert Etmeyin; Yeni Eviniz, Yeni Şehrinizde Sizi Bekliyor!\"<br><span style='font-size:16px; font-weight:400;'>Atama dönemlerinde kiralık ev bulmayı kolaylaştıran, taşınan ve ev arayan memurları güvenle buluşturan platform.</span></p>", unsafe_allow_html=True)
 
 elif aktif_sekme == "🏠 İlan Ekle":
