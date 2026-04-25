@@ -13,6 +13,7 @@ from google.cloud import firestore
 from PIL import Image
 import io
 from streamlit_geolocation import streamlit_geolocation
+import streamlit.components.v1 as components # YENİ: Animasyonu kesin çalıştıran bileşen
 
 # --- 1. SAYFA AYARLARI VE MOBİL DESTEK (PWA) ---
 st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", page_icon="🏢")
@@ -20,7 +21,7 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tasarım Temizlendi) ---
+# --- SADECE ZORUNLU TEKNİK DÜZELTMELER ---
 st.markdown("""
     <style>
         /* Harita Çerçevesi Düzeltmesi */
@@ -109,7 +110,7 @@ def load_data():
     st.session_state.houses = [doc.to_dict() for doc in db.collection('houses').stream()]
     st.session_state.messages = [doc.to_dict() for doc in db.collection('messages').stream()]
 
-    # Ziyaretçi Sayacı İşlemleri (Firebase)
+    # Ziyaretçi Sayacı
     stats_ref = db.collection('site_stats').document('visitors')
     stats_doc = stats_ref.get()
     
@@ -141,7 +142,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v32").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v33").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -428,7 +429,6 @@ with st.sidebar:
                 st.info("💡 Kurum filtresi için yukarıdan spesifik bir il seçin.")
                 kurum_sec = "Farketmez"
 
-        # Ziyaretçi Sayacı
         st.markdown("---")
         st.markdown(f"<p style='text-align:center; font-size:13px; color:gray;'>👁️ Toplam Ziyaretçi: <b>{st.session_state.visitor_count}</b></p>", unsafe_allow_html=True)
 
@@ -464,14 +464,12 @@ if st.session_state.tab_index >= len(tab_names):
 
 aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, horizontal=True, label_visibility="collapsed")
 
-# Sekme Geçiş Hızlandırıcısı
 if tab_names.index(aktif_sekme) != st.session_state.tab_index:
     st.session_state.tab_index = tab_names.index(aktif_sekme)
     st.rerun()
 
 if aktif_sekme == "📍 Harita":
     
-    # 1. HARİTA EKRANI
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
     for i in aktif_kurumlar: 
@@ -522,48 +520,66 @@ if aktif_sekme == "📍 Harita":
             st.session_state.tab_index = tab_names.index("🏠 İlan Ekle")
             st.rerun()
 
-    # 2. HARİTA ALTI GÖMÜLÜ TAŞINMA ANİMASYONU (Native HTML/CSS - Asla Çökmez)
-    st.markdown("""
-        <div style="position: relative; width: 100%; height: 180px; background: linear-gradient(to bottom, #87CEEB, #E0F6FF); border-radius: 12px; border: 2px solid #B0E0E6; overflow: hidden; margin: 30px 0 10px 0;">
-            <div style="position: absolute; top: 10px; right: 20px; font-size: 40px;">☀️</div>
-            <div style="position: absolute; top: 20px; left: -50px; font-size: 40px; animation: cloudMove 20s linear infinite;">☁️</div>
-            
-            <div style="position: absolute; bottom: 0; width: 100%; height: 40px; background: #82E0AA;"></div>
-            <div style="position: absolute; bottom: 15px; width: 100%; height: 10px; background: #7F8C8D;"></div>
-            
-            <div style="position: absolute; bottom: 35px; left: 10%; font-size: 60px; z-index: 2;">🏠</div>
-            <div style="position: absolute; bottom: 35px; right: 10%; font-size: 60px; z-index: 2;">🏡</div>
-            <div style="position: absolute; bottom: 35px; left: 5%; font-size: 40px; z-index: 1;">🌳</div>
-            <div style="position: absolute; bottom: 35px; right: 5%; font-size: 40px; z-index: 1;">🌲</div>
-
-            <div style="position: absolute; bottom: 25px; font-size: 55px; animation: drive 10s infinite ease-in-out; z-index: 3;">
+    # --- ÇÖZÜM: HARİTA ALTI GÖMÜLÜ TAŞINMA ANİMASYONU (st.components.v1.html İLE!) ---
+    st.markdown("---")
+    
+    animasyon_kodu = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+        body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 200px; background-color: transparent; font-family: sans-serif; }
+        .scene { position: relative; width: 80%; max-width: 800px; height: 180px; background: linear-gradient(to bottom, #87CEEB, #E0F6FF); border-radius: 12px; border: 2px solid #B0E0E6; overflow: hidden; }
+        .sun { position: absolute; top: 10px; right: 20px; font-size: 40px; }
+        .cloud { position: absolute; top: 20px; left: -50px; font-size: 40px; animation: cloudMove 20s linear infinite; }
+        .ground { position: absolute; bottom: 0; width: 100%; height: 40px; background: #82E0AA; }
+        .road { position: absolute; bottom: 15px; width: 100%; height: 10px; background: #7F8C8D; }
+        .house-left { position: absolute; bottom: 35px; left: 10%; font-size: 60px; z-index: 2; }
+        .house-right { position: absolute; bottom: 35px; right: 10%; font-size: 60px; z-index: 2; }
+        .tree-left { position: absolute; bottom: 35px; left: 5%; font-size: 40px; z-index: 1; }
+        .tree-right { position: absolute; bottom: 35px; right: 5%; font-size: 40px; z-index: 1; }
+        .truck-container { position: absolute; bottom: 25px; font-size: 55px; animation: drive 10s infinite ease-in-out; z-index: 3; }
+        .box { position: absolute; top: -15px; right: -10px; font-size: 25px; animation: loadunload 10s infinite; }
+        
+        @keyframes cloudMove { from { left: -10%; } to { left: 110%; } }
+        @keyframes drive {
+            0%, 15% { left: 18%; transform: scaleX(1); }
+            30%, 65% { left: 70%; transform: scaleX(1); }
+            70%, 85% { left: 70%; transform: scaleX(-1); }
+            100% { left: 18%; transform: scaleX(-1); }
+        }
+        @keyframes loadunload {
+            0% { opacity: 0; transform: translateY(-30px); }
+            5%, 15% { opacity: 1; transform: translateY(0); }
+            20%, 65% { opacity: 0; transform: translateY(0); }
+            70%, 80% { opacity: 1; transform: translateY(0); }
+            85%, 100% { opacity: 0; transform: translateY(-30px); }
+        }
+    </style>
+    </head>
+    <body>
+        <div class="scene">
+            <div class="sun">☀️</div>
+            <div class="cloud">☁️</div>
+            <div class="ground"></div>
+            <div class="road"></div>
+            <div class="house-left">🏠</div>
+            <div class="house-right">🏡</div>
+            <div class="tree-left">🌳</div>
+            <div class="tree-right">🌲</div>
+            <div class="truck-container">
                 🚚
-                <div style="position: absolute; top: -15px; right: -10px; font-size: 25px; animation: loadunload 10s infinite;">📦</div>
+                <div class="box">📦</div>
             </div>
-
-            <style>
-                @keyframes cloudMove {
-                    from { left: -10%; }
-                    to { left: 110%; }
-                }
-                @keyframes drive {
-                    0%, 15% { left: 18%; transform: scaleX(1); } /* 1. Evde Durur */
-                    30%, 65% { left: 70%; transform: scaleX(1); } /* 2. Eve Gider ve Durur */
-                    70%, 85% { left: 70%; transform: scaleX(-1); } /* Geri Döner */
-                    100% { left: 18%; transform: scaleX(-1); } /* 1. Eve Geri Varır */
-                }
-                @keyframes loadunload {
-                    0% { opacity: 0; transform: translateY(-30px); }
-                    5%, 15% { opacity: 1; transform: translateY(0); } /* Kutu yüklendi */
-                    20%, 65% { opacity: 0; transform: translateY(0); } /* Yolda gizli */
-                    70%, 80% { opacity: 1; transform: translateY(0); } /* Yeni eve indirildi */
-                    85%, 100% { opacity: 0; transform: translateY(-30px); }
-                }
-            </style>
         </div>
-    """, unsafe_allow_html=True)
+    </body>
+    </html>
+    """
+    
+    # Animasyonu güvenli şekilde render ediyoruz
+    components.html(animasyon_kodu, height=210)
 
-    # 3. ANİMASYON ALTI SLOGAN VE AÇIKLAMA METNİ
+    # Slogan ve Açıklama Metni
     st.markdown("""
         <div class='slogan-text'>"Tayininiz Çıktıysa Dert Etmeyin; Yeni Eviniz, Yeni Şehrinizde Sizi Bekliyor!"</div>
         <div class='slogan-sub'>Atama dönemlerinde kiralık ev bulmayı kolaylaştıran, taşınan ve ev arayan memurları güvenle buluşturan platform.</div>
