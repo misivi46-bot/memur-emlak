@@ -20,11 +20,11 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# YENİ: KULLANICININ İSTEDİĞİ ORİJİNAL MODERN CSS TASARIM BLOĞU
+# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tüm Renk ve Tema Ayarları Temizlendi) ---
 st.markdown("""
     <style>
-        iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
-        .main { background-color: #f8f9fa; }
+        /* Harita Çerçevesi Düzeltmesi */
+        .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
         /* Sekme Tasarımı ve İmleç/Tıklama Düzeltmeleri */
         div[role="radiogroup"] { 
@@ -36,53 +36,22 @@ st.markdown("""
         }
         div[role="radiogroup"] label { 
             cursor: pointer !important; 
-            caret-color: transparent !important; /* Yanıp sönen imleci görünmez yapar */
+            caret-color: transparent !important; 
         }
         div[role="radiogroup"] * { outline: none !important; }
         
         /* GPS Butonu Devasa Boşluk Düzeltmesi */
         [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
-            height: 45px !important; min-height: 45px !important; max-height: 45px !important; margin-bottom: 0px !important; overflow: hidden !important;
+            height: 45px !important;
+            min-height: 45px !important;
+            max-height: 45px !important;
+            margin-bottom: 0px !important;
+            overflow: hidden !important;
         }
-        [data-testid="stSidebar"] iframe { height: 45px !important; min-height: 45px !important; max-height: 45px !important; }
-
-        /* Modern Buton ve Form Gönderim Butonu Tasarımları */
-        div.stButton > button, div.stFormSubmitButton > button {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 10px !important;
-            padding: 10px 24px !important;
-            font-weight: 600 !important;
-            font-size: 15px !important;
-            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
-            transition: all 0.3s ease !important;
-        }
-        
-        /* Butonun Üzerine Fare Gelince (Hover) */
-        div.stButton > button:hover:not([kind="primary"]), div.stFormSubmitButton > button:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
-            background: linear-gradient(135deg, #219653 0%, #27ae60 100%) !important;
-            color: white !important;
-            border: none !important;
-        }
-        
-        /* Butona Tıklanınca (Active) */
-        div.stButton > button:active, div.stFormSubmitButton > button:active {
-            transform: translateY(1px) !important;
-            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
-            border: none !important;
-        }
-        
-        /* Hesap Silme Kırmızı Buton (Primary Type) */
-        div.stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
-            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3) !important;
-        }
-        div.stButton > button[kind="primary"]:hover {
-            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
-            box-shadow: 0 6px 15px rgba(231, 76, 60, 0.4) !important;
+        [data-testid="stSidebar"] iframe {
+            height: 45px !important;
+            min-height: 45px !important;
+            max-height: 45px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -141,7 +110,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v26").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v27").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -231,7 +200,6 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
-            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -322,7 +290,6 @@ with st.sidebar:
                             st.rerun()
                         else: st.error("Hatalı kullanıcı adı veya şifre!")
                 
-                # YENİ: Şifremi Unuttum Butonu giriş formunun hemen altına taşındı
                 if st.button("Şifremi Unuttum"):
                     st.session_state.forgot_password_mode = True
                     st.rerun()
@@ -450,11 +417,16 @@ if kurum_sec != "Farketmez":
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
 # --- 7. ANA PANEL VE SEKME YÖNETİMİ ---
-tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
-if st.session_state.user_role == "yonetici": tab_names.append("📊 Admin Paneli")
+# YENİ: En başa "Hakkında" sekmesi eklendi
+tab_names = ["ℹ️ Hakkında", "📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar"]
 
-if "tab_index" not in st.session_state: st.session_state.tab_index = 0
-if st.session_state.tab_index >= len(tab_names): st.session_state.tab_index = 0
+if st.session_state.user_role == "yonetici": 
+    tab_names.append("📊 Admin Paneli")
+
+if "tab_index" not in st.session_state: 
+    st.session_state.tab_index = 0
+if st.session_state.tab_index >= len(tab_names): 
+    st.session_state.tab_index = 0
 
 aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, horizontal=True, label_visibility="collapsed")
 
@@ -463,10 +435,27 @@ if tab_names.index(aktif_sekme) != st.session_state.tab_index:
     st.session_state.tab_index = tab_names.index(aktif_sekme)
     st.rerun()
 
-if aktif_sekme == "📍 Harita":
+# YENİ: Uygulama Hakkında Bölümü
+if aktif_sekme == "ℹ️ Hakkında":
+    st.title("🏢 Memur Emlak & Tayin Portalı")
+    st.markdown("---")
+    st.markdown("""
+    **Memurların atama ve tayin dönemlerinde kiralık ev bulmalarını kolaylaştırmak amacıyla tasarlanmıştır.** Yeni bir şehre taşınma süreci her zaman stresli bir süreçtir. Bu platform; tayini çıkan, yeni bir düzene adım atan ve güvenilir bir yuvaya ihtiyaç duyan memurlar ile, tayin sebebiyle evini devreden/kiralayan kişileri güvenli bir çatı altında buluşturur.
+
+    ### ✨ Uygulamanın Başlıca Özellikleri:
+    * **📍 Akıllı Harita Sistemi:** Evleri sadece bir liste olarak değil, doğrudan harita üzerinde konumlarıyla inceleyebilirsiniz.
+    * **🏢 Kurumlara Yakınlık:** İlgilendiğiniz evin Valilik, Adliye, Hastane veya Emniyet Müdürlüğü gibi resmi kurumlara tam olarak kaç kilometre uzaklıkta olduğunu harita üzerinden otomatik hesaplar.
+    * **💬 Güvenli İletişim:** İlan sahipleriyle sistem üzerinden doğrudan ve güvenle mesajlaşabilirsiniz.
+    * **⭐ Favori İlanlar:** İlgilendiğiniz evleri favorilerinize ekleyerek daha sonra tek tıkla kolayca ulaşabilirsiniz.
+    * **📍 GPS Destekli Arama:** "Bulunduğum Konum" özelliği ile etrafınızdaki müsait evleri ve kurumları anında harita üzerinde listeleyebilirsiniz.
+    
+    *Bu platform sayesinde tayin dönemlerindeki ev arayış stresini en aza indiriyor, "yeni eviniz, yeni şehrinizde sizi bekliyor" diyoruz.*
+    """)
+
+elif aktif_sekme == "📍 Harita":
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
-    # Bütün kurumlar her zaman ekranda basılır
+    # Bütün kurumlar haritaya basılır
     for i in aktif_kurumlar: 
         folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
