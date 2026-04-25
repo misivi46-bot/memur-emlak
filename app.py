@@ -102,7 +102,8 @@ def load_data():
             "meslek": "Mimar",
             "favorites": [],
             "tos_agreed": True,
-            "tos_date": "Sistem Kurucusu"
+            "tos_date": "Sistem Kurucusu",
+            "durum": "aktif" # Yönetici her zaman aktiftir
         }
         db.collection('users').document("misivi46").set(admin_data)
         st.session_state.users["misivi46"] = admin_data
@@ -142,7 +143,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v34").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v35").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -260,6 +261,7 @@ with st.sidebar:
     oda_sec, esya_sec = "Farketmez", "Farketmez"
 
     if not st.session_state.logged_in:
+        # Şifremi Unuttum Modu
         if st.session_state.get("forgot_password_mode", False):
             st.markdown("### 🔑 Şifremi Unuttum")
             
@@ -272,10 +274,16 @@ with st.sidebar:
                     f_e = st.text_input("Kayıtlı E-Posta Adresiniz")
                     if st.form_submit_button("Doğrulama Kodu Gönder"):
                         if f_u in st.session_state.users and st.session_state.users[f_u].get("email") == f_e:
-                            st.session_state.reset_code = str(random.randint(100000, 999999))
-                            st.session_state.reset_user = f_u
-                            st.session_state.reset_step = 2
-                            st.rerun()
+                            # HESAP DURUMU KONTROLÜ
+                            if st.session_state.users[f_u].get("durum") == "askiya_alindi":
+                                st.error("Üyeliğiniz uygulama kuralları çerçevesinde geçici olarak askıya alınmıştır.")
+                            elif st.session_state.users[f_u].get("durum") == "iptal_edildi":
+                                st.error("Üyeliğiniz uygulama kuralları çerçevesinde iptal edilmiştir.")
+                            else:
+                                st.session_state.reset_code = str(random.randint(100000, 999999))
+                                st.session_state.reset_user = f_u
+                                st.session_state.reset_step = 2
+                                st.rerun()
                         else:
                             st.error("Kullanıcı adı veya E-Posta adresi sistemde bulunamadı.")
                             
@@ -304,6 +312,7 @@ with st.sidebar:
                 st.session_state.reset_step = 1
                 st.rerun()
 
+        # Normal Giriş / Kayıt Modu
         else:
             auth = st.radio("Hesap İşlemleri:", ["Giriş Yap", "Üye Ol"], horizontal=True)
             
@@ -314,11 +323,19 @@ with st.sidebar:
                     if st.form_submit_button("Giriş Yap"):
                         load_data()
                         if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
-                            st.session_state.logged_in = True
-                            st.session_state.current_user = u
-                            st.session_state.user_role = st.session_state.users[u]["rol"]
-                            st.rerun()
-                        else: st.error("Hatalı kullanıcı adı veya şifre!")
+                            # --- YENİ: GİRİŞ YAPARKEN HESAP DURUMUNU KONTROL ET ---
+                            durum = st.session_state.users[u].get("durum", "aktif")
+                            if durum == "askiya_alindi":
+                                st.error("Üyeliğiniz uygulama kuralları çerçevesinde geçici olarak askıya alınmıştır.")
+                            elif durum == "iptal_edildi":
+                                st.error("Üyeliğiniz uygulama kuralları çerçevesinde iptal edilmiştir.")
+                            else:
+                                st.session_state.logged_in = True
+                                st.session_state.current_user = u
+                                st.session_state.user_role = st.session_state.users[u]["rol"]
+                                st.rerun()
+                        else: 
+                            st.error("Hatalı kullanıcı adı veya şifre!")
                 
                 if st.button("Şifremi Unuttum"):
                     st.session_state.forgot_password_mode = True
@@ -368,7 +385,8 @@ with st.sidebar:
                                     "meslek": n_meslek if n_meslek else "Belirtilmemiş",
                                     "favorites": [],
                                     "tos_agreed": True,
-                                    "tos_date": datetime.now().strftime("%d.%m.%Y %H:%M")
+                                    "tos_date": datetime.now().strftime("%d.%m.%Y %H:%M"),
+                                    "durum": "aktif" # YENİ: Standart kayıt olan kullanıcı aktiftir
                                 }
                                 db.collection('users').document(n_u).set(u_data)
                                 st.success("Kayıt başarılı! Lütfen Giriş Yap sekmesinden sisteme girin.")
@@ -518,7 +536,6 @@ if aktif_sekme == "📍 Harita":
             st.session_state.tab_index = tab_names.index("🏠 İlan Ekle")
             st.rerun()
 
-    # --- DÜZELTME: KAMYON YÖNÜ TERSİNE ÇEVRİLDİ ---
     st.markdown("---")
     
     animasyon_kodu = """
@@ -541,7 +558,6 @@ if aktif_sekme == "📍 Harita":
         
         @keyframes cloudMove { from { left: -10%; } to { left: 110%; } }
         
-        /* DÜZELTME: Sola bakan standart emojiyi, sağa giderken (scaleX(-1) ile) sağa çeviriyoruz */
         @keyframes drive {
             0%, 15% { left: 18%; transform: scaleX(-1); }
             30%, 65% { left: 70%; transform: scaleX(-1); }
@@ -691,12 +707,34 @@ elif aktif_sekme == "📊 Admin Paneli":
         c2.metric("Toplam İlan", len(st.session_state.houses))
         c3.metric("Toplam Mesaj", len(st.session_state.messages))
         
+        # --- YENİ: KULLANICI DURUM YÖNETİMİ BÖLÜMÜ ---
+        st.markdown("---")
+        st.subheader("🛡️ Kullanıcı Yetki ve Durum Yönetimi")
+        uye_listesi = [k for k, v in st.session_state.users.items() if v.get("rol") != "yonetici"]
+        if uye_listesi:
+            with st.form("admin_status_form"):
+                secilen_uye = st.selectbox("İşlem Yapılacak Üye Seçin:", uye_listesi)
+                mevcut_durum = st.session_state.users[secilen_uye].get("durum", "aktif")
+                
+                durum_secenekleri = ["aktif", "askiya_alindi", "iptal_edildi"]
+                durum_etiketleri = {"aktif": "🟢 Aktif Hesap", "askiya_alindi": "⏸️ Hesabı Geçici Olarak Askıya Al", "iptal_edildi": "⛔ Hesabı Kalıcı Olarak İptal Et"}
+                
+                yeni_durum = st.radio("Hesap Durumu Belirle:", durum_secenekleri, index=durum_secenekleri.index(mevcut_durum), format_func=lambda x: durum_etiketleri[x])
+                
+                if st.form_submit_button("Durumu Kaydet"):
+                    db.collection('users').document(secilen_uye).update({"durum": yeni_durum})
+                    st.session_state.users[secilen_uye]["durum"] = yeni_durum
+                    st.success(f"@{secilen_uye} adlı kullanıcının durumu '{durum_etiketleri[yeni_durum]}' olarak güncellendi!")
+        else:
+            st.info("Sistemde işlem yapılacak normal üye bulunmamaktadır.")
+
         st.markdown("---")
         st.subheader("👥 Detaylı Kullanıcı Veritabanı")
-        
         for u_id, u_info in st.session_state.users.items():
             if u_info.get("rol") != "yonetici":
                 with st.expander(f"👤 {u_info.get('ad')} (@{u_id})"):
+                    durum_ikonu = {"aktif": "🟢 Aktif", "askiya_alindi": "⏸️ Askıda", "iptal_edildi": "⛔ İptal Edildi"}.get(u_info.get("durum", "aktif"))
+                    st.write(f"**Hesap Durumu:** {durum_ikonu}")
                     st.write(f"**E-Posta:** {u_info.get('email', 'Belirtilmemiş')}")
                     st.write(f"**Doğum Tarihi:** {u_info.get('dogum_tarihi', 'Belirtilmemiş')}")
                     st.write(f"**Meslek:** {u_info.get('meslek', 'Belirtilmemiş')}")
