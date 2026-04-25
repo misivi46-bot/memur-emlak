@@ -12,7 +12,9 @@ from google.oauth2 import service_account
 from google.cloud import firestore
 from PIL import Image
 import io
+import requests
 from streamlit_geolocation import streamlit_geolocation
+from streamlit_lottie import st_lottie
 
 # --- 1. SAYFA AYARLARI VE MOBİL DESTEK (PWA) ---
 st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", page_icon="🏢")
@@ -20,7 +22,7 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tüm Renk ve Tema Ayarları Temizlendi) ---
+# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tasarım Temizlendi) ---
 st.markdown("""
     <style>
         /* Harita Çerçevesi Düzeltmesi */
@@ -53,6 +55,17 @@ st.markdown("""
             min-height: 45px !important;
             max-height: 45px !important;
         }
+        
+        /* Vurgulu Slogan Metni (Animasyon Altı) */
+        .slogan-text {
+            font-size: 24px !important;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -69,7 +82,7 @@ def get_db():
 
 db = get_db()
 
-# --- 3. VERİ YÜKLEME ---
+# --- 3. VERİ YÜKLEME VE ZİYARETÇİ SAYACI ---
 def load_data():
     if db is None: return
     st.session_state.users = {doc.id: doc.to_dict() for doc in db.collection('users').stream()}
@@ -92,8 +105,22 @@ def load_data():
     st.session_state.houses = [doc.to_dict() for doc in db.collection('houses').stream()]
     st.session_state.messages = [doc.to_dict() for doc in db.collection('messages').stream()]
 
+    # YENİ: Ziyaretçi Sayacı İşlemleri (Firebase üzerinden)
+    stats_ref = db.collection('site_stats').document('visitors')
+    stats_doc = stats_ref.get()
+    
+    if stats_doc.exists:
+        current_count = stats_doc.to_dict().get('count', 0)
+        new_count = current_count + 1
+        stats_ref.update({'count': new_count})
+        st.session_state.visitor_count = new_count
+    else:
+        stats_ref.set({'count': 1})
+        st.session_state.visitor_count = 1
+
 if 'data_loaded' not in st.session_state:
     st.session_state.users, st.session_state.houses, st.session_state.messages = {}, [], []
+    st.session_state.visitor_count = 0
     load_data()
     st.session_state.data_loaded = True
 
@@ -110,7 +137,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v28").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v30").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -119,6 +146,13 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     dlat, dlon = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
+
+# YENİ: Lottie Animasyonu Yükleyici
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
 
 # --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRALI) ---
 PLAKA_SIRALI_ILLER = [
@@ -290,7 +324,6 @@ with st.sidebar:
                             st.rerun()
                         else: st.error("Hatalı kullanıcı adı veya şifre!")
                 
-                # Şifremi Unuttum Butonu giriş formunun altında
                 if st.button("Şifremi Unuttum"):
                     st.session_state.forgot_password_mode = True
                     st.rerun()
@@ -398,6 +431,10 @@ with st.sidebar:
                 st.info("💡 Kurum filtresi için yukarıdan spesifik bir il seçin.")
                 kurum_sec = "Farketmez"
 
+        # YENİ: Ziyaretçi Sayacı Gösterimi (Sidebar'ın en altı)
+        st.markdown("---")
+        st.markdown(f"<p style='text-align:center; font-size:12px; color:gray;'>👁️ Toplam Ziyaretçi: <b>{st.session_state.visitor_count}</b></p>", unsafe_allow_html=True)
+
         if st.button("🚪 Çıkış Yap"):
             st.session_state.logged_in = False
             st.rerun()
@@ -418,7 +455,6 @@ if kurum_sec != "Farketmez":
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
 # --- 7. ANA PANEL VE SEKME YÖNETİMİ ---
-# YENİ: "Hakkında" sekmesi standart sekmelerin EN SONUNA eklendi.
 tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar", "ℹ️ Hakkında"]
 
 if st.session_state.user_role == "yonetici": 
@@ -431,7 +467,7 @@ if st.session_state.tab_index >= len(tab_names):
 
 aktif_sekme = st.radio("Menü", tab_names, index=st.session_state.tab_index, horizontal=True, label_visibility="collapsed")
 
-# Sekme Geçiş Hızlandırıcısı (Çift tıklamayı engeller)
+# Sekme Geçiş Hızlandırıcısı
 if tab_names.index(aktif_sekme) != st.session_state.tab_index:
     st.session_state.tab_index = tab_names.index(aktif_sekme)
     st.rerun()
@@ -439,7 +475,6 @@ if tab_names.index(aktif_sekme) != st.session_state.tab_index:
 if aktif_sekme == "📍 Harita":
     m = folium.Map(location=aktif_merkez, zoom_start=harita_zoom, tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google')
     
-    # Bütün kurumlar her zaman ekranda basılır
     for i in aktif_kurumlar: 
         folium.Marker([i["lat"], i["lon"]], popup=i["name"], icon=folium.Icon(color="blue", icon="info-sign")).add_to(m)
     
@@ -487,6 +522,17 @@ if aktif_sekme == "📍 Harita":
             st.session_state.prev_click = click_data
             st.session_state.tab_index = tab_names.index("🏠 İlan Ekle")
             st.rerun()
+
+    # --- YENİ: HARİTA ALTINDAKİ TAŞINMA ANİMASYONU VE SLOGAN ---
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Nakliye / Taşınma Kamyonu Animasyonu (LottieFiles)
+        lottie_moving = load_lottieurl("https://assets10.lottiefiles.com/packages/lf20_t2bmt8yo.json")
+        if lottie_moving:
+            st_lottie(lottie_moving, height=200, key="moving_truck")
+        
+        st.markdown("<p class='slogan-text'>\"Tayininiz Çıktıysa Dert Etmeyin; Yeni Eviniz, Yeni Şehrinizde Sizi Bekliyor!\"<br><span style='font-size:16px; font-weight:400;'>Atama dönemlerinde kiralık ev bulmayı kolaylaştıran, taşınan ve ev arayan memurları güvenle buluşturan platform.</span></p>", unsafe_allow_html=True)
 
 elif aktif_sekme == "🏠 İlan Ekle":
     if not st.session_state.logged_in: st.warning("Giriş yapınız.")
@@ -573,7 +619,6 @@ elif aktif_sekme == "📩 Mesajlar":
             with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
                 st.write(f"**{m['house']}** | {m['from']} ➔ {m['to']}\n{m['text']}")
 
-# YENİ: Hakkında Sayfası İşlevleri
 elif aktif_sekme == "ℹ️ Hakkında":
     st.title("🏢 Memur Emlak & Tayin Portalı")
     st.markdown("---")
@@ -586,8 +631,6 @@ elif aktif_sekme == "ℹ️ Hakkında":
     * **💬 Güvenli İletişim:** İlan sahipleriyle sistem üzerinden doğrudan ve güvenle mesajlaşabilirsiniz.
     * **⭐ Favori İlanlar:** İlgilendiğiniz evleri favorilerinize ekleyerek daha sonra tek tıkla kolayca ulaşabilirsiniz.
     * **📍 GPS Destekli Arama:** "Bulunduğum Konum" özelliği ile etrafınızdaki müsait evleri ve kurumları anında harita üzerinde listeleyebilirsiniz.
-    
-    *Bu platform sayesinde tayin dönemlerindeki ev arayış stresini en aza indiriyor, "yeni eviniz, yeni şehrinizde sizi bekliyor" diyoruz.*
     """)
 
 elif aktif_sekme == "📊 Admin Paneli":
