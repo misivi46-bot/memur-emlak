@@ -21,11 +21,14 @@ st.set_page_config(page_title="Memur Emlak & Tayin Portalı", layout="wide", pag
 st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
 st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
 
-# --- SADECE ZORUNLU TEKNİK DÜZELTMELER ---
+# --- SADECE ZORUNLU TEKNİK DÜZELTMELER (Tasarım Orijinal Haline Bırakıldı) ---
 st.markdown("""
     <style>
+        /* Harita Çerçevesi Düzeltmesi */
         .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
+        .main { background-color: #f8f9fa; }
         
+        /* Sekme Tasarımı ve İmleç/Tıklama Düzeltmeleri */
         div[role="radiogroup"] { 
             flex-direction: row; 
             gap: 15px; 
@@ -39,6 +42,7 @@ st.markdown("""
         }
         div[role="radiogroup"] * { outline: none !important; }
         
+        /* GPS Butonu Devasa Boşluk Düzeltmesi */
         [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
             height: 45px !important;
             min-height: 45px !important;
@@ -51,21 +55,42 @@ st.markdown("""
             min-height: 45px !important;
             max-height: 45px !important;
         }
-        
-        .slogan-text {
-            font-size: 28px !important;
-            font-weight: 700;
-            color: #1a252f;
-            text-align: center;
-            margin-top: 15px;
-            margin-bottom: 5px;
+
+        /* Modern Buton ve Form Gönderim Butonu Tasarımları */
+        div.stButton > button, div.stFormSubmitButton > button {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 10px !important;
+            padding: 10px 24px !important;
+            font-weight: 600 !important;
+            font-size: 15px !important;
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3) !important;
+            transition: all 0.3s ease !important;
         }
-        .slogan-sub {
-            font-size: 18px !important;
-            font-weight: 400;
-            color: #34495e;
-            text-align: center;
-            margin-bottom: 30px;
+        
+        div.stButton > button:hover:not([kind="primary"]), div.stFormSubmitButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.4) !important;
+            background: linear-gradient(135deg, #219653 0%, #27ae60 100%) !important;
+            color: white !important;
+            border: none !important;
+        }
+        
+        div.stButton > button:active, div.stFormSubmitButton > button:active {
+            transform: translateY(1px) !important;
+            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3) !important;
+            border: none !important;
+        }
+        
+        /* Hesap Silme Kırmızı Buton (Primary Type) */
+        div.stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3) !important;
+        }
+        div.stButton > button[kind="primary"]:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
+            box-shadow: 0 6px 15px rgba(231, 76, 60, 0.4) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -98,7 +123,8 @@ def load_data():
             "meslek": "Mimar",
             "favorites": [],
             "tos_agreed": True,
-            "tos_date": "Sistem Kurucusu"
+            "tos_date": "Sistem Kurucusu",
+            "durum": "aktif"
         }
         db.collection('users').document("misivi46").set(admin_data)
         st.session_state.users["misivi46"] = admin_data
@@ -106,8 +132,10 @@ def load_data():
     st.session_state.houses = [doc.to_dict() for doc in db.collection('houses').stream()]
     st.session_state.messages = [doc.to_dict() for doc in db.collection('messages').stream()]
 
+    # Ziyaretçi Sayacı
     stats_ref = db.collection('site_stats').document('visitors')
     stats_doc = stats_ref.get()
+    
     if stats_doc.exists:
         current_count = stats_doc.to_dict().get('count', 0)
         new_count = current_count + 1
@@ -136,7 +164,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v37").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v38").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -146,7 +174,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# --- 5. ŞEHİR BİLGİLERİ VE KURUMLAR ---
+# --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRALI) ---
 PLAKA_SIRALI_ILLER = [
     "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
     "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
@@ -226,6 +254,7 @@ with st.sidebar:
         if st.session_state.get('last_gps_data') != user_location:
             st.session_state.last_gps_data = user_location
             st.session_state.secili_konum_state = "📍 Bulunduğum Konum"
+            st.rerun()
             
     if "secili_konum_state" not in st.session_state:
         st.session_state.secili_konum_state = "Türkiye Geneli"
@@ -461,7 +490,6 @@ if kurum_sec != "Farketmez":
 unread_count = 0
 if st.session_state.logged_in:
     for m in st.session_state.messages:
-        # Eğer mesaj oturum açan kullanıcıya gelmişse ve "read" anahtarı False ise say
         if m.get("to") == st.session_state.current_user and m.get("read", True) == False:
             unread_count += 1
 
@@ -590,7 +618,6 @@ if aktif_sekme == "📍 Harita":
     </body>
     </html>
     """
-    
     components.html(animasyon_kodu, height=210)
 
     st.markdown("""
@@ -665,7 +692,6 @@ elif aktif_sekme == "📋 Tüm İlanlar":
                     m_i = st.text_input("Mesajınız", key=f"m_{h['id']}")
                     if st.button("Gönder", key=f"b_{h['id']}"):
                         if m_i and icerik_uygun_mu(m_i):
-                            # YENİ: Mesaj Gönderilirken Veritabanına Okunmadı (read: False) ve ID işleniyor
                             m_id = str(int(datetime.now().timestamp() * 1000)) + str(random.randint(10, 99))
                             msg = {
                                 "id": m_id,
@@ -689,7 +715,7 @@ elif aktif_sekme == "⭐ Favoriler":
 elif aktif_sekme.startswith("📩 Mesajlar"):
     if st.session_state.logged_in:
         
-        # YENİ: Mesajlar Sekmesi Açıldığında "Okunmamış" Olanları "Okundu" Olarak İşaretle
+        # YENİ: Sekme Açıldığında Okunmamışları Okundu Yap
         needs_rerun = False
         for m in st.session_state.messages:
             if m.get("to") == st.session_state.current_user and m.get("read", True) == False:
@@ -699,7 +725,6 @@ elif aktif_sekme.startswith("📩 Mesajlar"):
                 needs_rerun = True
         
         if needs_rerun:
-            # Okundu yapıldıktan sonra bildirimi ekrandan kaldırmak için sayfayı yenile
             st.rerun()
 
         my_m = [m for m in st.session_state.messages if m["from"] == st.session_state.current_user or m["to"] == st.session_state.current_user or st.session_state.user_role == "yonetici"]
@@ -707,9 +732,34 @@ elif aktif_sekme.startswith("📩 Mesajlar"):
         if not my_m:
             st.info("Henüz bir mesajınız bulunmuyor.")
             
-        for m in my_m:
-            with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
+        for idx, m in enumerate(my_m):
+            is_sender = (m["from"] == st.session_state.current_user)
+            with st.chat_message("user" if is_sender else "assistant"):
                 st.write(f"**{m['house']}** | {m['from']} ➔ {m['to']}\n{m['text']}")
+                
+                # YENİ: Size Gelen Mesaja Anında Cevap Ver (Yanıtla) Kutusu
+                if m["to"] == st.session_state.current_user:
+                    with st.expander("↪️ Cevapla"):
+                        with st.form(key=f"reply_form_{idx}"):
+                            reply_text = st.text_input("Yanıtınız:")
+                            if st.form_submit_button("Yanıtı Gönder"):
+                                if reply_text and icerik_uygun_mu(reply_text):
+                                    new_m_id = str(int(datetime.now().timestamp() * 1000)) + str(random.randint(10, 99))
+                                    new_msg = {
+                                        "id": new_m_id,
+                                        "house": m["house"],
+                                        "from": st.session_state.current_user,
+                                        "to": m["from"], 
+                                        "text": reply_text,
+                                        "date": datetime.now().strftime("%d.%m %H:%M"),
+                                        "read": False
+                                    }
+                                    db.collection('messages').document(new_m_id).set(new_msg)
+                                    st.session_state.messages.append(new_msg)
+                                    st.success("Yanıtınız başarıyla gönderildi!")
+                                    st.rerun()
+                                else:
+                                    st.error("Geçersiz veya boş mesaj!")
 
 elif aktif_sekme == "ℹ️ Hakkında":
     st.title("🏢 Memur Emlak & Tayin Portalı")
