@@ -24,10 +24,8 @@ st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_a
 # --- SADECE ZORUNLU TEKNİK DÜZELTMELER ---
 st.markdown("""
     <style>
-        /* Harita Çerçevesi Düzeltmesi */
         .main iframe { max-width: 100% !important; overflow: hidden !important; border-radius: 12px; }
         
-        /* Sekme Tasarımı ve İmleç/Tıklama Düzeltmeleri */
         div[role="radiogroup"] { 
             flex-direction: row; 
             gap: 15px; 
@@ -41,7 +39,6 @@ st.markdown("""
         }
         div[role="radiogroup"] * { outline: none !important; }
         
-        /* GPS Butonu Devasa Boşluk Düzeltmesi */
         [data-testid="stSidebar"] div[data-testid="stElementContainer"]:has(iframe) {
             height: 45px !important;
             min-height: 45px !important;
@@ -55,7 +52,6 @@ st.markdown("""
             max-height: 45px !important;
         }
         
-        /* Vurgulu Slogan Metinleri (Animasyon Altı) */
         .slogan-text {
             font-size: 28px !important;
             font-weight: 700;
@@ -102,8 +98,7 @@ def load_data():
             "meslek": "Mimar",
             "favorites": [],
             "tos_agreed": True,
-            "tos_date": "Sistem Kurucusu",
-            "durum": "aktif" # Yönetici her zaman aktiftir
+            "tos_date": "Sistem Kurucusu"
         }
         db.collection('users').document("misivi46").set(admin_data)
         st.session_state.users["misivi46"] = admin_data
@@ -111,10 +106,8 @@ def load_data():
     st.session_state.houses = [doc.to_dict() for doc in db.collection('houses').stream()]
     st.session_state.messages = [doc.to_dict() for doc in db.collection('messages').stream()]
 
-    # Ziyaretçi Sayacı
     stats_ref = db.collection('site_stats').document('visitors')
     stats_doc = stats_ref.get()
-    
     if stats_doc.exists:
         current_count = stats_doc.to_dict().get('count', 0)
         new_count = current_count + 1
@@ -143,7 +136,7 @@ def icerik_uygun_mu(metin):
 
 def koordinati_adrese_cevir(lat, lon):
     try:
-        loc = Nominatim(user_agent="memur_emlak_v35").reverse(f"{lat}, {lon}", timeout=3)
+        loc = Nominatim(user_agent="memur_emlak_v37").reverse(f"{lat}, {lon}", timeout=3)
         return loc.address if loc else "Adres bulunamadı."
     except: return "Adres servisi meşgul."
 
@@ -153,7 +146,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return round(R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a))), 2)
 
-# --- 5. ŞEHİR BİLGİLERİ (PLAKA SIRALI) ---
+# --- 5. ŞEHİR BİLGİLERİ VE KURUMLAR ---
 PLAKA_SIRALI_ILLER = [
     "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
     "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
@@ -261,7 +254,6 @@ with st.sidebar:
     oda_sec, esya_sec = "Farketmez", "Farketmez"
 
     if not st.session_state.logged_in:
-        # Şifremi Unuttum Modu
         if st.session_state.get("forgot_password_mode", False):
             st.markdown("### 🔑 Şifremi Unuttum")
             
@@ -274,7 +266,6 @@ with st.sidebar:
                     f_e = st.text_input("Kayıtlı E-Posta Adresiniz")
                     if st.form_submit_button("Doğrulama Kodu Gönder"):
                         if f_u in st.session_state.users and st.session_state.users[f_u].get("email") == f_e:
-                            # HESAP DURUMU KONTROLÜ
                             if st.session_state.users[f_u].get("durum") == "askiya_alindi":
                                 st.error("Üyeliğiniz uygulama kuralları çerçevesinde geçici olarak askıya alınmıştır.")
                             elif st.session_state.users[f_u].get("durum") == "iptal_edildi":
@@ -312,7 +303,6 @@ with st.sidebar:
                 st.session_state.reset_step = 1
                 st.rerun()
 
-        # Normal Giriş / Kayıt Modu
         else:
             auth = st.radio("Hesap İşlemleri:", ["Giriş Yap", "Üye Ol"], horizontal=True)
             
@@ -323,7 +313,6 @@ with st.sidebar:
                     if st.form_submit_button("Giriş Yap"):
                         load_data()
                         if u in st.session_state.users and st.session_state.users[u]["sifre"] == p:
-                            # --- YENİ: GİRİŞ YAPARKEN HESAP DURUMUNU KONTROL ET ---
                             durum = st.session_state.users[u].get("durum", "aktif")
                             if durum == "askiya_alindi":
                                 st.error("Üyeliğiniz uygulama kuralları çerçevesinde geçici olarak askıya alınmıştır.")
@@ -334,8 +323,7 @@ with st.sidebar:
                                 st.session_state.current_user = u
                                 st.session_state.user_role = st.session_state.users[u]["rol"]
                                 st.rerun()
-                        else: 
-                            st.error("Hatalı kullanıcı adı veya şifre!")
+                        else: st.error("Hatalı kullanıcı adı veya şifre!")
                 
                 if st.button("Şifremi Unuttum"):
                     st.session_state.forgot_password_mode = True
@@ -386,7 +374,7 @@ with st.sidebar:
                                     "favorites": [],
                                     "tos_agreed": True,
                                     "tos_date": datetime.now().strftime("%d.%m.%Y %H:%M"),
-                                    "durum": "aktif" # YENİ: Standart kayıt olan kullanıcı aktiftir
+                                    "durum": "aktif"
                                 }
                                 db.collection('users').document(n_u).set(u_data)
                                 st.success("Kayıt başarılı! Lütfen Giriş Yap sekmesinden sisteme girin.")
@@ -468,7 +456,18 @@ if kurum_sec != "Farketmez":
     f_houses = [h for h in f_houses if calculate_distance(h["lat"], h["lon"], inst["lat"], inst["lon"]) <= max_mesafe]
 
 # --- 7. ANA PANEL VE SEKME YÖNETİMİ ---
-tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", "📩 Mesajlar", "ℹ️ Hakkında"]
+
+# YENİ: OKUNMAMIŞ MESAJ BİLDİRİM KONTROLÜ
+unread_count = 0
+if st.session_state.logged_in:
+    for m in st.session_state.messages:
+        # Eğer mesaj oturum açan kullanıcıya gelmişse ve "read" anahtarı False ise say
+        if m.get("to") == st.session_state.current_user and m.get("read", True) == False:
+            unread_count += 1
+
+msg_tab_name = f"📩 Mesajlar ({unread_count} Yeni)" if unread_count > 0 else "📩 Mesajlar"
+
+tab_names = ["📍 Harita", "🏠 İlan Ekle", "📋 Tüm İlanlar", "⭐ Favoriler", msg_tab_name, "ℹ️ Hakkında"]
 
 if st.session_state.user_role == "yonetici": 
     tab_names.append("📊 Admin Paneli")
@@ -537,7 +536,6 @@ if aktif_sekme == "📍 Harita":
             st.rerun()
 
     st.markdown("---")
-    
     animasyon_kodu = """
     <!DOCTYPE html>
     <html>
@@ -667,8 +665,18 @@ elif aktif_sekme == "📋 Tüm İlanlar":
                     m_i = st.text_input("Mesajınız", key=f"m_{h['id']}")
                     if st.button("Gönder", key=f"b_{h['id']}"):
                         if m_i and icerik_uygun_mu(m_i):
-                            msg = {"house": h["title"], "from": st.session_state.current_user, "to": h["owner"], "text": m_i, "date": datetime.now().strftime("%d.%m %H:%M")}
-                            db.collection('messages').add(msg)
+                            # YENİ: Mesaj Gönderilirken Veritabanına Okunmadı (read: False) ve ID işleniyor
+                            m_id = str(int(datetime.now().timestamp() * 1000)) + str(random.randint(10, 99))
+                            msg = {
+                                "id": m_id,
+                                "house": h["title"], 
+                                "from": st.session_state.current_user, 
+                                "to": h["owner"], 
+                                "text": m_i, 
+                                "date": datetime.now().strftime("%d.%m %H:%M"),
+                                "read": False
+                            }
+                            db.collection('messages').document(m_id).set(msg)
                             st.session_state.messages.append(msg)
                             st.success("İletildi.")
 
@@ -678,9 +686,27 @@ elif aktif_sekme == "⭐ Favoriler":
         for h in [x for x in st.session_state.houses if x["id"] in f_l]: 
             st.write(f"⭐ **{h['title']}** - {h['price']} TL (Adres: {h['address']})")
 
-elif aktif_sekme == "📩 Mesajlar":
+elif aktif_sekme.startswith("📩 Mesajlar"):
     if st.session_state.logged_in:
+        
+        # YENİ: Mesajlar Sekmesi Açıldığında "Okunmamış" Olanları "Okundu" Olarak İşaretle
+        needs_rerun = False
+        for m in st.session_state.messages:
+            if m.get("to") == st.session_state.current_user and m.get("read", True) == False:
+                m["read"] = True
+                if "id" in m:
+                    db.collection('messages').document(m["id"]).update({"read": True})
+                needs_rerun = True
+        
+        if needs_rerun:
+            # Okundu yapıldıktan sonra bildirimi ekrandan kaldırmak için sayfayı yenile
+            st.rerun()
+
         my_m = [m for m in st.session_state.messages if m["from"] == st.session_state.current_user or m["to"] == st.session_state.current_user or st.session_state.user_role == "yonetici"]
+        
+        if not my_m:
+            st.info("Henüz bir mesajınız bulunmuyor.")
+            
         for m in my_m:
             with st.chat_message("user" if m["from"] == st.session_state.current_user else "assistant"):
                 st.write(f"**{m['house']}** | {m['from']} ➔ {m['to']}\n{m['text']}")
@@ -707,7 +733,6 @@ elif aktif_sekme == "📊 Admin Paneli":
         c2.metric("Toplam İlan", len(st.session_state.houses))
         c3.metric("Toplam Mesaj", len(st.session_state.messages))
         
-        # --- YENİ: KULLANICI DURUM YÖNETİMİ BÖLÜMÜ ---
         st.markdown("---")
         st.subheader("🛡️ Kullanıcı Yetki ve Durum Yönetimi")
         uye_listesi = [k for k, v in st.session_state.users.items() if v.get("rol") != "yonetici"]
